@@ -31,7 +31,7 @@ public class SettingsActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 SharedPreferences sharedPreferences = getApplicationContext().getSharedPreferences("ALL_SAMPLES",0);
-                Util.resetLocations(sharedPreferences);
+                Util.resetSamples(sharedPreferences);
 
                 Toast.makeText(getApplicationContext(), R.string.confirm_reset_training_text, Toast.LENGTH_SHORT).show();
             }

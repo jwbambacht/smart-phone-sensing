@@ -16,7 +16,7 @@ import java.util.List;
 
 public class TrainingActivity extends AppCompatActivity {
 
-    List<Location> currentLocations;
+    List<Sample> currentSamples;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,7 +27,7 @@ public class TrainingActivity extends AppCompatActivity {
 
         SharedPreferences sharedPreferences = getApplicationContext().getSharedPreferences("ALL_SAMPLES",0);
 
-        this.currentLocations = Util.loadLocations(sharedPreferences);
+        this.currentSamples = Util.loadSamples(sharedPreferences);
 
         final RadioGroup radioGroupCells = (RadioGroup) findViewById(R.id.radiogroup_cells);
         fillRadioGroup(this, radioGroupCells, R.array.cell_array);
@@ -100,10 +100,10 @@ public class TrainingActivity extends AppCompatActivity {
         int[] RSSI = new int[0];
 
         try {
-            Location newLocation = new Location(cellID, activityID, BSSID, RSSI);
-            this.currentLocations.add(newLocation);
+            Sample newSample = new Sample(cellID, activityID, BSSID, RSSI);
+            this.currentSamples.add(newSample);
             SharedPreferences sharedPreferences = getApplicationContext().getSharedPreferences("ALL_SAMPLES",0);
-            Util.saveLocations(sharedPreferences, this.currentLocations);
+            Util.saveSamples(sharedPreferences, this.currentSamples);
 
             Toast.makeText(getApplicationContext(), R.string.confirm_add_training_text, Toast.LENGTH_SHORT).show();
 

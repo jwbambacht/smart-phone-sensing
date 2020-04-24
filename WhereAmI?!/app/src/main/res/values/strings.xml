@@ -54,7 +54,7 @@
     <string name="dialog_reset_message">Do you want to reset all data?</string>
     <string name="confirm_add_training_text">Training sample added!</string>
     <string name="error_add_training_text">An error occurred, please try again!</string>
-    <string name="confirm_reset_training_text">Locations successfully reset!</string>
+    <string name="confirm_reset_training_text">Samples successfully removed!</string>
 
     <string name="view_home_title">WhereAmI?!</string>
     <string name="view_training_title">Training</string>

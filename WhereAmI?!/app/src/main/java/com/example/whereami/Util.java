@@ -14,36 +14,36 @@ import java.util.List;
 
 public class Util  extends AppCompatActivity {
 
-    static List<Location> loadLocations(SharedPreferences sharedPreferences) {
+    static List<Sample> loadSamples(SharedPreferences sharedPreferences) {
 
         Gson gson = new Gson();
         String json = sharedPreferences.getString("locations",null);
-        Type type = new TypeToken<ArrayList<Location>>() {}.getType();
-        List<Location> locations = gson.fromJson(json,type);
+        Type type = new TypeToken<ArrayList<Sample>>() {}.getType();
+        List<Sample> samples = gson.fromJson(json,type);
 
-        if(locations == null) {
-            locations = new ArrayList<>();
+        if(samples == null) {
+            samples = new ArrayList<>();
         }
 
-        Log.i("Total saved locations",""+locations.size());
+        Log.i("Total saved samples",""+samples.size());
 
-        return locations;
+        return samples;
     }
 
-    static void saveLocations(SharedPreferences sharedPreferences, List<Location> locations) {
+    static void saveSamples(SharedPreferences sharedPreferences, List<Sample> locations) {
         SharedPreferences.Editor editor = sharedPreferences.edit();
         Gson gson = new Gson();
         String json = gson.toJson(locations);
-        editor.putString("locations",json);
+        editor.putString("samples",json);
         editor.apply();
 
-        Log.i("Locations saved!","");
+        Log.i("Samples saved!","");
     }
 
-    static void resetLocations(SharedPreferences sharedPreferences) {
+    static void resetSamples(SharedPreferences sharedPreferences) {
         try {
-            List<Location> locations = new ArrayList<>();
-            saveLocations(sharedPreferences,locations);
+            List<Sample> locations = new ArrayList<>();
+            saveSamples(sharedPreferences,locations);
         }catch (Exception e) {
             throw new RuntimeException(e);
         }

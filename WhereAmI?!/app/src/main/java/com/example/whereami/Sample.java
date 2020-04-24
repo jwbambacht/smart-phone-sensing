@@ -1,13 +1,13 @@
 package com.example.whereami;
 
-public class Location {
+public class Sample {
 
     public int cellID;
     public int activityID;
     public byte[] BSSID;
     public int[] RSSI;
 
-    public Location(int cellID, int activityID, byte[] BSSID, int[] RSSI) {
+    public Sample(int cellID, int activityID, byte[] BSSID, int[] RSSI) {
         this.cellID = cellID;
         this.activityID = activityID;
         this.BSSID = BSSID;
@@ -16,6 +16,6 @@ public class Location {
     
     @Override
     public String toString() {
-        return "Location is in cell " + this.cellID;
+        return "Sample is in cell " + this.cellID;
     }
 }
