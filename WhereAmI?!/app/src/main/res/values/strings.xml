@@ -1,0 +1,62 @@
+<resources>
+    <string name="app_name">Where Am I?!</string>
+    <string name="title_main_activity">Where Am I?!</string>
+    <string name="button_training_title">TRAIN</string>
+    <string name="button_sense_title">SENSE</string>
+    <string name="button_reset_title">RESET</string>
+    <string name="button_back_title">BACK</string>
+    <string name="button_training_submit">Add training sample</string>
+
+    <string name="title_training">TRAINING</string>
+    <string name="title_testing">TESTING</string>
+    <string name="training_label_cell">CURRENT CELL</string>
+
+    <string name="textview_sense_title">You are in:</string>
+    <string name="textview_activity_title">Currenty activity:</string>
+
+    <string-array name="cell_array">
+        <item>Cell A</item>
+        <item>Cell B</item>
+        <item>Cell C</item>
+        <item>Cell D</item>
+        <item>Cell E</item>
+        <item>Cell F</item>
+        <item>Cell G</item>
+        <item>Cell H</item>
+    </string-array>
+    <string name="training_label_activity">CURRENT ACTIVITY</string>
+    <string-array name="activity_array">
+        <item>Walking</item>
+        <item>Standing</item>
+        <item>Being crazy</item>
+    </string-array>
+    <string-array name="method_array">
+        <item>KNN</item>
+        <item>Bayesian Filters</item>
+        <item>Particle Filters</item>
+    </string-array>
+    <string-array name="precision_array">
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+        <item>6</item>
+        <item>7</item>
+        <item>8</item>
+    </string-array>
+
+    <string name="textview_label_method">Method</string>
+    <string name="textview_label_precision">Precision</string>
+    <string name="textview_label_reset">Reset training data</string>
+
+    <string name="dialog_reset_title">Are u sure?</string>
+    <string name="dialog_reset_message">Do you want to reset all data?</string>
+    <string name="confirm_add_training_text">Training sample added!</string>
+    <string name="error_add_training_text">An error occurred, please try again!</string>
+    <string name="confirm_reset_training_text">Locations successfully reset!</string>
+
+    <string name="view_home_title">WhereAmI?!</string>
+    <string name="view_training_title">Training</string>
+    <string name="view_settings_title">Settings</string>
+</resources>
