@@ -65,8 +65,7 @@
                     android:id="@+id/radiogroup_activity"
                     android:layout_width="fill_parent"
                     android:layout_height="wrap_content"
-                    android:layout_toEndOf="@+id/radiogroup_cells"
-                    android:layout_marginLeft="5dp"
+                    android:layout_marginStart="5dp"
                     android:layout_weight="1"
                     android:minHeight="25dp"
                     android:textColor="@color/colorLight"/>
