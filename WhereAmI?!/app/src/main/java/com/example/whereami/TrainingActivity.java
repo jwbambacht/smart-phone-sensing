@@ -149,6 +149,12 @@ public class TrainingActivity extends AppCompatActivity {
 
                     tempNetworks.put(BSSID,rssi);
                 }
+
+                try {
+                    Thread.sleep(200);
+                } catch(InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                }
             }
 
             for(Map.Entry<String,int[]> entry : tempNetworks.entrySet()) {

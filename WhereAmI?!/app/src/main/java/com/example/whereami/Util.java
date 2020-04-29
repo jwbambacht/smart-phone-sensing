@@ -31,7 +31,7 @@ public class Util  extends AppCompatActivity {
 
         for(Sample s : samples) {
             HashMap<String,Integer> networks = s.getNetworks();
-            Log.i("BSSID/RSSI for ","network");
+            Log.i("BSSID/RSSI for ","network with cellID " + s.getCellID());
 
             for (Map.Entry<String,Integer> entry : networks.entrySet()) {
                 Log.i("", entry.getKey() + " / " + entry.getValue());

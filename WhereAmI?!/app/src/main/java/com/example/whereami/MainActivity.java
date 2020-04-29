@@ -85,13 +85,6 @@ public class MainActivity extends AppCompatActivity {
                 } else {
 
                     Toast.makeText(MainActivity.this,"Sensing...", Toast.LENGTH_SHORT).show();
-//                    Toast.makeText(MainActivity.this, "Searching for networks...", Toast.LENGTH_SHORT).show();
-//                    wifiManager.getScanResults();
-//
-//                    for(ScanResult scan : wifiManager.getScanResults()) {
-//                        networks.put(scan.BSSID,scan.level);
-//                    }
-//                    Toast.makeText(MainActivity.this, "Found " + networks.size() + " network(s)", Toast.LENGTH_SHORT).show();
 
                     int rounds = 5;
 
@@ -117,6 +110,12 @@ public class MainActivity extends AppCompatActivity {
 
                             tempNetworks.put(BSSID,rssi);
                         }
+
+                        try {
+                            Thread.sleep(200);
+                        } catch(InterruptedException ex) {
+                            Thread.currentThread().interrupt();
+                        }
                     }
 
                     for(Map.Entry<String,int[]> entry : tempNetworks.entrySet()) {
@@ -133,12 +132,6 @@ public class MainActivity extends AppCompatActivity {
                         }
 
                         networks.put(BSSID,(int) Math.floor(sum/nonZeroElements));
-
-                        try {
-                            Thread.sleep(200);
-                        } catch(InterruptedException ex) {
-                            Thread.currentThread().interrupt();
-                        }
 
                     }
 
@@ -183,7 +176,7 @@ public class MainActivity extends AppCompatActivity {
                 if(sensedNetworks.containsKey(BSSID)) {
                     distance += Math.pow(Math.abs(RSSI-sensedNetworks.get(BSSID)),2);
                 }else{
-                    distance += Math.pow(RSSI,2);
+                    distance += Math.pow(Math.abs(RSSI+100),2);
                 }
             }
 
