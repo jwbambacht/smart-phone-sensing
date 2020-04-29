@@ -1,7 +1,5 @@
 package com.example.whereami;
 
-import java.util.List;
-
 public class Network {
 
     String BSSID;
@@ -15,4 +13,5 @@ public class Network {
     public String getBSSID() {
         return this.BSSID;
     }
+
 }

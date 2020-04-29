@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -74,20 +75,72 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 HashMap<String, Integer> networks = new HashMap<String, Integer>();
+                HashMap<String, int[]> tempNetworks = new HashMap<String,int[]>();
+
                 String cellResult = null;
                 String activityResult = null;
 
                 if (ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                     ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, MY_PERMISSIONS_ACCESS_COARSE_LOCATION);
                 } else {
-                    wifiManager.startScan();
-//                    Toast.makeText(MainActivity.this, "Searching for networks...", Toast.LENGTH_SHORT).show();
-                    wifiManager.getScanResults();
 
-                    for(ScanResult scan : wifiManager.getScanResults()) {
-                        networks.put(scan.BSSID,scan.level);
+                    Toast.makeText(MainActivity.this,"Sensing...", Toast.LENGTH_SHORT).show();
+//                    Toast.makeText(MainActivity.this, "Searching for networks...", Toast.LENGTH_SHORT).show();
+//                    wifiManager.getScanResults();
+//
+//                    for(ScanResult scan : wifiManager.getScanResults()) {
+//                        networks.put(scan.BSSID,scan.level);
+//                    }
+//                    Toast.makeText(MainActivity.this, "Found " + networks.size() + " network(s)", Toast.LENGTH_SHORT).show();
+
+                    int rounds = 5;
+
+                    for(int i = 0; i < rounds; i++) {
+                        wifiManager.startScan();
+                        List<ScanResult> scanResults = wifiManager.getScanResults();
+
+                        Log.i("ScanResults",scanResults.size()+"");
+
+                        for(ScanResult scan : scanResults) {
+                            String BSSID = scan.BSSID;
+
+                            int[] rssi;
+
+                            if(tempNetworks.containsKey(BSSID)) {
+                                rssi = tempNetworks.get(BSSID);
+                                tempNetworks.remove(BSSID);
+                            }else{
+                                rssi = new int[rounds];
+                            }
+
+                            rssi[i] = scan.level;
+
+                            tempNetworks.put(BSSID,rssi);
+                        }
                     }
-                    Toast.makeText(MainActivity.this, "Found " + networks.size() + " network(s)", Toast.LENGTH_SHORT).show();
+
+                    for(Map.Entry<String,int[]> entry : tempNetworks.entrySet()) {
+                        String BSSID = entry.getKey();
+                        int[] arrayRSSI = entry.getValue();
+
+                        int nonZeroElements = 0;
+                        int sum = 0;
+                        for(int i = 0; i < rounds; i++) {
+                            if(arrayRSSI[i] < 0) {
+                                nonZeroElements++;
+                                sum += arrayRSSI[i];
+                            }
+                        }
+
+                        networks.put(BSSID,(int) Math.floor(sum/nonZeroElements));
+
+                        try {
+                            Thread.sleep(200);
+                        } catch(InterruptedException ex) {
+                            Thread.currentThread().interrupt();
+                        }
+
+                    }
 
                     cellResult = KNN(networks);
 
@@ -176,7 +229,6 @@ public class MainActivity extends AppCompatActivity {
         }
 
         String[] cells = this.getResources().getStringArray(R.array.cell_array);
-
 
         return cells[largestIndex];
     }
