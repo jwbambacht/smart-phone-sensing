@@ -20,61 +20,85 @@
             android:textColor="@color/colorLight"
             android:textStyle="italic"
             android:layout_marginTop="10dp"
-            android:layout_marginLeft="10dp"
+            android:layout_marginLeft="15dp"
             android:layout_marginRight="10dp" />
 
         <Spinner
             android:id="@+id/spinner_method"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="50dp"
             android:layout_below="@+id/textview_label_method"
             android:background="@android:drawable/btn_dropdown"
             android:spinnerMode="dropdown"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="5dp"
             android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp" />
+
+        <TextView
+            android:id="@+id/textview_label_warning_change"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/spinner_method"
+            android:text="@string/textview_label_warning_change"
+            android:textColor="@color/colorMuted"
+            android:textStyle="italic"
+            android:textSize="10sp"
+            android:layout_marginLeft="20dp"
             android:layout_marginRight="10dp" />
 
         <TextView
             android:id="@+id/textview_label_precision"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@+id/spinner_method"
+            android:layout_below="@+id/textview_label_warning_change"
             android:text="@string/textview_label_precision"
             android:textColor="@color/colorLight"
             android:textStyle="italic"
             android:layout_marginTop="10dp"
-            android:layout_marginLeft="10dp"
+            android:layout_marginLeft="15dp"
             android:layout_marginRight="10dp" />
 
         <Spinner
             android:id="@+id/spinner_precision"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="50dp"
             android:layout_below="@+id/textview_label_precision"
             android:background="@android:drawable/btn_dropdown"
             android:spinnerMode="dropdown"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="5dp"
             android:layout_marginLeft="10dp"
             android:layout_marginRight="10dp" />
 
         <TextView
-            android:id="@+id/textview_label_reset"
+            android:id="@+id/textview_label_warning_change_2"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:layout_below="@+id/spinner_precision"
-            android:text="@string/textview_label_reset"
-            android:textColor="@color/colorLight"
+            android:text="@string/textview_label_warning_change"
+            android:textColor="@color/colorMuted"
             android:textStyle="italic"
+            android:textSize="10sp"
+            android:layout_marginLeft="20dp"
+            android:layout_marginRight="10dp" />
+
+        <Button
+            android:id="@+id/button_save_settings"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_below="@+id/textview_label_warning_change_2"
             android:layout_marginTop="10dp"
             android:layout_marginLeft="10dp"
-            android:layout_marginRight="10dp" />
+            android:layout_marginRight="10dp"
+            android:fontFamily="sans-serif-thin"
+            android:text="@string/button_save_title"
+            android:textSize="24sp" />
 
         <Button
             android:id="@+id/button_reset_training"
             android:layout_width="match_parent"
             android:layout_height="50dp"
-            android:layout_below="@+id/textview_label_reset"
-            android:layout_marginTop="10dp"
+            android:layout_alignParentBottom="true"
+            android:layout_marginBottom="10dp"
             android:layout_marginLeft="10dp"
             android:layout_marginRight="10dp"
             android:fontFamily="sans-serif-thin"

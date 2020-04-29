@@ -2,6 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.whereami">
 
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -26,6 +30,11 @@
             android:name="com.example.whereami.SettingsActivity"
             android:parentActivityName="com.example.whereami.MainActivity"
             android:label="@string/view_settings_title">
+        </activity>
+        <activity
+            android:name="com.example.whereami.SenseActivity"
+            android:parentActivityName="com.example.whereami.MainActivity"
+            android:label="@string/view_sense_title">
         </activity>
     </application>
 

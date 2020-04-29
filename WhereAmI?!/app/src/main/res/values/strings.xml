@@ -4,6 +4,7 @@
     <string name="button_training_title">TRAIN</string>
     <string name="button_sense_title">SENSE</string>
     <string name="button_reset_title">RESET</string>
+    <string name="button_save_title">SAVE</string>
     <string name="button_back_title">BACK</string>
     <string name="button_training_submit">Add training sample</string>
 
@@ -13,6 +14,8 @@
 
     <string name="textview_sense_title">You are in:</string>
     <string name="textview_activity_title">Currenty activity:</string>
+    <string name="textview_sense_to_see">Sense to see results</string>
+    <string name="textview_label_warning_change">* Changing will cause the training samples to be removed</string>
 
     <string-array name="cell_array">
         <item>Cell A</item>
@@ -36,9 +39,6 @@
         <item>Particle Filters</item>
     </string-array>
     <string-array name="precision_array">
-        <item>1</item>
-        <item>2</item>
-        <item>3</item>
         <item>4</item>
         <item>5</item>
         <item>6</item>
@@ -55,8 +55,11 @@
     <string name="confirm_add_training_text">Training sample added!</string>
     <string name="error_add_training_text">An error occurred, please try again!</string>
     <string name="confirm_reset_training_text">Samples successfully removed!</string>
+    <string name="confirm_save_settings_text">Settings successfully saved!</string>
+    <string name="error_not_enough_samples">At least 8 samples required</string>
 
     <string name="view_home_title">WhereAmI?!</string>
     <string name="view_training_title">Training</string>
     <string name="view_settings_title">Settings</string>
+    <string name="view_sense_title">Sense</string>
 </resources>

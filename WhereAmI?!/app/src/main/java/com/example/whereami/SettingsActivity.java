@@ -2,6 +2,7 @@ package com.example.whereami;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -11,27 +12,58 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class SettingsActivity extends AppCompatActivity {
 
+    SharedPreferences settingsSharedPreferences;
+    SharedPreferences allSamplesSharedPreferences;
+    String currentMethod;
+    int currentPrecision;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
 
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        settingsSharedPreferences = getApplicationContext().getSharedPreferences("SETTINGS", 0);
+        allSamplesSharedPreferences = getApplicationContext().getSharedPreferences("ALL_SAMPLES",0);
+
+        String currentMethod = Util.getMethod(settingsSharedPreferences);
+        currentPrecision = Util.getPrecision(settingsSharedPreferences);
 
         Spinner methodSpinner = (Spinner) findViewById(R.id.spinner_method);
         ArrayAdapter<String> methodAdapter = new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item, getResources().getStringArray(R.array.method_array));
         methodSpinner.setAdapter(methodAdapter);
+        methodSpinner.setSelection(methodAdapter.getPosition(currentMethod));
 
         Spinner precisionSpinner = (Spinner) findViewById(R.id.spinner_precision);
         ArrayAdapter<String> precisionAdapter = new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item, getResources().getStringArray(R.array.precision_array));
         precisionSpinner.setAdapter(precisionAdapter);
+        precisionSpinner.setSelection(precisionAdapter.getPosition(currentPrecision+""));
+
+        Button saveButton = (Button) findViewById(R.id.button_save_settings);
+        saveButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                String method = methodSpinner.getSelectedItem().toString();
+                int precision = Integer.parseInt(precisionSpinner.getSelectedItem().toString());
+
+                Util.setPrecision(settingsSharedPreferences, precision);
+                Util.setMethod(settingsSharedPreferences, method);
+
+                if(currentMethod != method || currentPrecision != precision) {
+                    Util.resetSamples(allSamplesSharedPreferences);
+                }
+
+                Toast.makeText(getApplicationContext(), R.string.confirm_save_settings_text, Toast.LENGTH_SHORT).show();
+                Toast.makeText(getApplicationContext(), R.string.confirm_reset_training_text, Toast.LENGTH_SHORT).show();
+            }
+        });
 
         Button resetButton = (Button) findViewById(R.id.button_reset_training);
         resetButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                SharedPreferences sharedPreferences = getApplicationContext().getSharedPreferences("ALL_SAMPLES",0);
-                Util.resetSamples(sharedPreferences);
+
+                Util.resetSamples(allSamplesSharedPreferences);
 
                 Toast.makeText(getApplicationContext(), R.string.confirm_reset_training_text, Toast.LENGTH_SHORT).show();
             }

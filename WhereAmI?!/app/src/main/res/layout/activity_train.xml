@@ -29,7 +29,7 @@
                     android:id="@+id/textview_label_cell"
                     android:layout_width="fill_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/training_label_cell"
+                    android:text="@string/textview_sense_title"
                     android:textColor="@color/colorLight"
                     android:textStyle="italic"
                     android:layout_marginEnd="5dp"

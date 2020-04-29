@@ -1,21 +1,29 @@
 package com.example.whereami;
 
+import java.util.HashMap;
+import java.util.List;
+
 public class Sample {
 
     public int cellID;
     public int activityID;
-    public byte[] BSSID;
-    public int[] RSSI;
+    public HashMap<String,Integer> networks;
 
-    public Sample(int cellID, int activityID, byte[] BSSID, int[] RSSI) {
+    public Sample(int cellID, int activityID, HashMap<String, Integer> networks) {
         this.cellID = cellID;
         this.activityID = activityID;
-        this.BSSID = BSSID;
-        this.RSSI = RSSI;
+        this.networks = networks;
     }
-    
-    @Override
-    public String toString() {
-        return "Sample is in cell " + this.cellID;
+
+    public HashMap<String,Integer> getNetworks() {
+        return this.networks;
+    }
+
+    public int getCellID() {
+        return this.cellID;
+    }
+
+    public int getActivityID() {
+        return this.activityID;
     }
 }

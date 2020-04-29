@@ -11,66 +11,91 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" >
 
-        <TextView
-            android:id="@+id/textview_cell_title"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_alignParentTop="true"
-            android:text="@string/textview_sense_title"
-            android:textColor="@color/colorLight"
-            android:textStyle="italic"
-            android:layout_marginTop="10dp"
-            android:layout_marginLeft="10dp"
-            android:layout_marginRight="10dp"/>
-
-        <GridView
-            android:id="@+id/gridview_sense"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_below="@+id/textview_cell_title"
-            android:layout_marginTop="10dp"
-            android:layout_marginLeft="10dp"
-            android:layout_marginRight="10dp"
-            android:gravity="center"
-            android:numColumns="2"
-            android:verticalSpacing="10dp"
-            android:horizontalSpacing="10dp" />
-
-        <TextView
-            android:id="@+id/textview_activity_title"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_below="@+id/gridview_sense"
-            android:text="@string/textview_activity_title"
-            android:textColor="@color/colorLight"
-            android:textStyle="italic"
-            android:layout_marginTop="10dp"
-            android:layout_marginLeft="10dp"
-            android:layout_marginRight="10dp"/>
-
-        <TextView
-            android:id="@+id/textview_activity_result"
-            android:layout_width="match_parent"
-            android:layout_height="25dp"
-            android:layout_below="@+id/textview_activity_title"
-            android:text=""
-            android:textColor="@color/colorLight"
-            android:textStyle="italic"
-            android:layout_marginTop="10dp"
-            android:layout_marginLeft="10dp"
-            android:layout_marginRight="10dp"/>
-
         <Button
             android:id="@+id/button_sense"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_above="@id/button_training"
-            android:layout_marginStart="10dp"
-            android:layout_marginEnd="10dp"
+            android:layout_alignParentTop="true"
             android:layout_marginTop="10dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
             android:fontFamily="sans-serif-thin"
             android:text="@string/button_sense_title"
             android:textSize="24sp" />
+
+        <LinearLayout
+            android:id="@+id/column_title_row"
+            android:orientation="horizontal"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/button_sense"
+            android:layout_marginTop="10dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp">
+
+            <TextView
+                android:id="@+id/textview_label_cell"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/textview_sense_title"
+                android:textColor="@color/colorLight"
+                android:textStyle="bold"
+                android:layout_marginEnd="5dp"
+                android:layout_weight="1"
+                android:textAlignment="center"/>
+
+            <TextView
+                android:id="@+id/textview_label_activity"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="5dp"
+                android:text="@string/textview_activity_title"
+                android:textColor="@color/colorLight"
+                android:textStyle="bold"
+                android:layout_weight="1"
+                android:textAlignment="center"/>
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/column_title_row_2"
+            android:orientation="horizontal"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/column_title_row"
+            android:layout_marginTop="10dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp">
+
+            <TextView
+                android:id="@+id/textview_cell_result"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/colorDark"
+                android:layout_marginStart="5dp"
+                android:layout_marginEnd="5dp"
+                android:layout_weight="1"
+                android:textSize="16sp"
+                android:textAlignment="center"
+                android:background="@color/colorLight"
+                android:padding="10dp"
+                android:text="@string/textview_sense_to_see" />
+
+            <TextView
+                android:id="@+id/textview_activity_result"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="5dp"
+                android:layout_marginEnd="5dp"
+                android:textColor="@color/colorDark"
+                android:layout_weight="1"
+                android:textSize="16sp"
+                android:textAlignment="center"
+                android:background="@color/colorLight"
+                android:padding="10dp"
+                android:text="@string/textview_sense_to_see"/>
+
+        </LinearLayout>
 
         <Button
             android:id="@+id/button_training"
