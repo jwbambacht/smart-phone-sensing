@@ -19,17 +19,13 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.GridView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -85,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
                     ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, MY_PERMISSIONS_ACCESS_COARSE_LOCATION);
                 } else {
                     wifiManager.startScan();
-                    Toast.makeText(MainActivity.this, "Searching for networks...", Toast.LENGTH_SHORT).show();
+//                    Toast.makeText(MainActivity.this, "Searching for networks...", Toast.LENGTH_SHORT).show();
                     wifiManager.getScanResults();
 
                     for(ScanResult scan : wifiManager.getScanResults()) {

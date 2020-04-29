@@ -23,7 +23,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -117,7 +116,6 @@ public class TrainingActivity extends AppCompatActivity {
         Log.i("Selected Cell", cellID + "");
         Log.i("Select Activity", activityID + "");
 
-//        List<Network> networks = new ArrayList<>();
         HashMap<String,Integer> networks = new HashMap<String,Integer>();
 
         if (ActivityCompat.checkSelfPermission(TrainingActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -132,17 +130,6 @@ public class TrainingActivity extends AppCompatActivity {
             }
             Toast.makeText(TrainingActivity.this, "Found " + networks.size() + " network(s)", Toast.LENGTH_SHORT).show();
         }
-
-        String method = Util.getMethod(settingsSharedPreferences);
-
-        if (method == "KNN") {
-            Log.i("Method", "KNN");
-        } else if (method == "Bayesian Filters") {
-            Log.i("Method", "Bayesian Filters");
-        } else if (method == "Particle Filters") {
-            Log.i("Method", "Particle Filters");
-        }
-
 
         Sample newSample = new Sample(cellID, activityID, networks);
         this.currentSamples.add(newSample);
