@@ -4,6 +4,7 @@ public class Result {
 
     public Sample sample;
     public double distance;
+    public double weight;
 
     public Result(Sample sample, double distance) {
         this.sample = sample;
@@ -16,6 +17,18 @@ public class Result {
 
     public int getCellID() {
         return this.sample.cellID;
+    }
+
+    public void setWeight(double weight) {
+        this.weight = weight;
+    }
+
+    public double getWeight() {
+        return this.weight;
+    }
+
+    public void normalizeWeight(double totalWeight) {
+        this.weight = this.weight/totalWeight;
     }
 
     public String toString() {

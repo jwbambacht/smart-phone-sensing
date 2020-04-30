@@ -7,11 +7,9 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
-import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.RadioButton;
@@ -25,7 +23,6 @@ import androidx.core.content.ContextCompat;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class TrainingActivity extends AppCompatActivity {
 
@@ -114,80 +111,24 @@ public class TrainingActivity extends AppCompatActivity {
     }
 
     public void addToTraining(int cellID, int activityID) {
-        Log.i("Selected Cell", cellID + "");
-        Log.i("Select Activity", activityID + "");
 
-        HashMap<String,Integer> networks = new HashMap<String,Integer>();
-        HashMap<String,int[]> tempNetworks = new HashMap<String,int[]>();
+        HashMap<String, Integer> networks = new HashMap<String, Integer>();
+        int rounds = 5;
 
         if (ActivityCompat.checkSelfPermission(TrainingActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(TrainingActivity.this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, MY_PERMISSIONS_ACCESS_COARSE_LOCATION);
+
+            Toast.makeText(getApplicationContext(), R.string.error_add_training_text, Toast.LENGTH_SHORT).show();
         } else {
-            wifiManager.startScan();
-//            Toast.makeText(TrainingActivity.this, "Searching for networks...", Toast.LENGTH_SHORT).show();
+            networks = Util.findNetworks(wifiManager, rounds);
 
-            int rounds = 5;
+            Sample newSample = new Sample(cellID, activityID, networks);
+            this.currentSamples.add(newSample);
 
-            for(int i = 0; i < rounds; i++) {
-                List<ScanResult> scanResults = wifiManager.getScanResults();
+            Util.saveSamples(allSamplesSharedPreferences, this.currentSamples);
 
-                Log.i("ScanResults",scanResults.size()+"");
-
-                for(ScanResult scan : scanResults) {
-                    String BSSID = scan.BSSID;
-
-                    int[] rssi;
-
-                    if(tempNetworks.containsKey(BSSID)) {
-                        rssi = tempNetworks.get(BSSID);
-                        tempNetworks.remove(BSSID);
-                    }else{
-                        rssi = new int[rounds];
-                    }
-
-                    rssi[i] = scan.level;
-
-                    tempNetworks.put(BSSID,rssi);
-                }
-
-                try {
-                    Thread.sleep(200);
-                } catch(InterruptedException ex) {
-                    Thread.currentThread().interrupt();
-                }
-            }
-
-            for(Map.Entry<String,int[]> entry : tempNetworks.entrySet()) {
-                String BSSID = entry.getKey();
-                int[] arrayRSSI = entry.getValue();
-
-                int nonZeroElements = 0;
-                int sum = 0;
-                for(int i = 0; i < rounds; i++) {
-                    if(arrayRSSI[i] < 0) {
-                        nonZeroElements++;
-                        sum += arrayRSSI[i];
-                    }
-                }
-
-                networks.put(BSSID,(int) Math.floor(sum/nonZeroElements));
-
-            }
-
-
-//            for(ScanResult scan : wifiManager.getScanResults()) {
-//                networks.put(scan.BSSID,scan.level);
-//            }
-//            Toast.makeText(TrainingActivity.this, "Found " + networks.size() + " network(s)", Toast.LENGTH_SHORT).show();
-
+            Toast.makeText(getApplicationContext(), R.string.confirm_add_training_text, Toast.LENGTH_SHORT).show();
         }
-
-        Sample newSample = new Sample(cellID, activityID, networks);
-        this.currentSamples.add(newSample);
-
-        Util.saveSamples(allSamplesSharedPreferences, this.currentSamples);
-
-        Toast.makeText(getApplicationContext(), R.string.confirm_add_training_text, Toast.LENGTH_SHORT).show();
     }
 
     @Override
