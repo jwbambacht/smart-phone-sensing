@@ -253,6 +253,10 @@ public class Util  extends AppCompatActivity {
             return 7;
         }
 
+        if(k % 2 == 0) {
+            return k++;
+        }
+
         return k;
     }
 
