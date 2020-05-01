@@ -1,6 +1,7 @@
 package com.example.whereami;
 
 import android.content.SharedPreferences;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -13,18 +14,19 @@ import androidx.appcompat.app.AppCompatActivity;
 public class SettingsActivity extends AppCompatActivity {
 
     SharedPreferences settingsSharedPreferences;
-    SharedPreferences allSamplesSharedPreferences;
     String currentMethod;
     int currentPrecision;
+    SQLiteDatabase db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
 
+        db = openOrCreateDatabase("database.db", MODE_PRIVATE, null);
+
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         settingsSharedPreferences = getApplicationContext().getSharedPreferences("SETTINGS", 0);
-        allSamplesSharedPreferences = getApplicationContext().getSharedPreferences("ALL_SAMPLES",0);
 
         String currentMethod = Util.getMethod(settingsSharedPreferences);
         currentPrecision = Util.getPrecision(settingsSharedPreferences);
@@ -50,7 +52,7 @@ public class SettingsActivity extends AppCompatActivity {
                 Util.setMethod(settingsSharedPreferences, method);
 
                 if(currentMethod != method || currentPrecision != precision) {
-                    Util.resetSamples(allSamplesSharedPreferences);
+                    Util.resetSamples(db);
                 }
 
                 Toast.makeText(getApplicationContext(), R.string.confirm_save_settings_text, Toast.LENGTH_SHORT).show();
@@ -63,7 +65,7 @@ public class SettingsActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
 
-                Util.resetSamples(allSamplesSharedPreferences);
+                Util.resetSamples(db);
 
                 Toast.makeText(getApplicationContext(), R.string.confirm_reset_training_text, Toast.LENGTH_SHORT).show();
             }

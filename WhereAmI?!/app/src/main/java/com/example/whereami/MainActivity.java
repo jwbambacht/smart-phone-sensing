@@ -10,6 +10,7 @@ import android.content.Context;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.database.sqlite.SQLiteDatabase;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -23,19 +24,23 @@ import android.widget.Toast;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
     private WifiManager wifiManager;
     private final int MY_PERMISSIONS_ACCESS_COARSE_LOCATION = 1;
     WifiReceiver receiverWifi;
-    SharedPreferences settingsSharedPreferences, allSamplesSharedPreferences;
+    SharedPreferences settingsSharedPreferences;
     TextView textViewCell, textViewActivity;
+    SQLiteDatabase db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        db = openOrCreateDatabase("database.db", MODE_PRIVATE, null);
 
         textViewCell = findViewById(R.id.textview_cell_result);
         textViewActivity = findViewById(R.id.textview_activity_result);
@@ -46,7 +51,6 @@ public class MainActivity extends AppCompatActivity {
             wifiManager.setWifiEnabled(true);
         }
 
-        allSamplesSharedPreferences = getApplicationContext().getSharedPreferences("ALL_SAMPLES", 0);
         settingsSharedPreferences = getApplicationContext().getSharedPreferences("SETTINGS", 0);
 
         Button training = (Button) findViewById(R.id.button_training);
@@ -64,7 +68,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
 
-                List<Sample> allSamples = Util.loadSamples(allSamplesSharedPreferences);
+                List<Sample> allSamples = Util.loadSamples(db);
 
                 // Require at least 9 training samples before we can sense. This means that we have a minimum value for k of 3
                 if(allSamples.size() < 9) {

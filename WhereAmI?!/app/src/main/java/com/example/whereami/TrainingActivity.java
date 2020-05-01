@@ -6,10 +6,12 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.RadioButton;
@@ -30,7 +32,8 @@ public class TrainingActivity extends AppCompatActivity {
     private WifiManager wifiManager;
     private final int MY_PERMISSIONS_ACCESS_COARSE_LOCATION = 1;
     WifiReceiver receiverWifi;
-    SharedPreferences allSamplesSharedPreferences,settingsSharedPreferences;
+    SharedPreferences settingsSharedPreferences;
+    SQLiteDatabase db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,8 +42,9 @@ public class TrainingActivity extends AppCompatActivity {
 
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        allSamplesSharedPreferences = getApplicationContext().getSharedPreferences("ALL_SAMPLES",0);
-        this.currentSamples = Util.loadSamples(allSamplesSharedPreferences);
+        db = openOrCreateDatabase("database.db", MODE_PRIVATE, null);
+
+        this.currentSamples = Util.loadSamples(db);
 
         settingsSharedPreferences = getApplicationContext().getSharedPreferences("SETTINGS", 0);
         int precision = Util.getPrecision(settingsSharedPreferences);
@@ -122,10 +126,10 @@ public class TrainingActivity extends AppCompatActivity {
         } else {
             networks = Util.findNetworks(wifiManager, rounds);
 
-            Sample newSample = new Sample(cellID, activityID, networks);
+            Sample newSample = new Sample(this.currentSamples.size(), cellID, activityID, networks);
             this.currentSamples.add(newSample);
 
-            Util.saveSamples(allSamplesSharedPreferences, this.currentSamples);
+            Util.saveSamples(this.currentSamples,this.db);
 
             Toast.makeText(getApplicationContext(), R.string.confirm_add_training_text, Toast.LENGTH_SHORT).show();
         }

@@ -1,16 +1,13 @@
 package com.example.whereami;
 
+import android.content.ContentValues;
 import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.util.Log;
-
 import androidx.appcompat.app.AppCompatActivity;
-
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -22,51 +19,97 @@ public class Util  extends AppCompatActivity {
 
     // Method that retrieves all trained samples from the sharedPreferences storage
     // Samples are first converted from json to objects
-    static List<Sample> loadSamples(SharedPreferences sharedPreferences) {
+    static List<Sample> loadSamples(SQLiteDatabase database) {
 
-        Gson gson = new Gson();
-        String json = sharedPreferences.getString("samples",null);
-        Type type = new TypeToken<ArrayList<Sample>>() {}.getType();
-        List<Sample> samples = gson.fromJson(json,type);
+        Util.createDatabases(database);
 
-        if(samples == null) {
-            samples = new ArrayList<>();
+        List<Sample> samples = new ArrayList<>();
+
+        Cursor sampleCursor = database.rawQuery("SELECT sampleID, cellID, activityID FROM samples", null);
+
+        while(sampleCursor.moveToNext()) {
+            int sampleID = sampleCursor.getInt(0);
+            int cellID = sampleCursor.getInt(1);
+            int activityID = sampleCursor.getInt(2);
+
+            HashMap<String,Integer> networks = new HashMap<String,Integer>();
+
+            String[] args = {""+sampleID};
+            Cursor networksCursor = database.rawQuery("SELECT sampleID, BSSID, RSSI FROM networks WHERE sampleID = ?", args);
+
+            Log.i("Sample "+sampleID,"cellID "+cellID+", activityID "+activityID+", "+networksCursor.getCount()+" networks");
+            while(networksCursor.moveToNext()) {
+                String BSSID = networksCursor.getString(1);
+                int RSSI = networksCursor.getInt(2);
+
+                networks.put(BSSID,RSSI);
+
+                Log.println(0,"Network "+BSSID," and RSSI "+RSSI);
+            }
+
+            networksCursor.close();
+
+            samples.add(new Sample(sampleID,cellID,activityID,networks));
         }
 
-        Log.i("Total saved samples",""+samples.size());
+        sampleCursor.close();
 
-//        for(Sample s : samples) {
-//            HashMap<String,Integer> networks = s.getNetworks();
-//            Log.i("BSSID/RSSI for ","network with cellID " + s.getCellID());
-//
-//            for (Map.Entry<String,Integer> entry : networks.entrySet()) {
-//                Log.i("", entry.getKey() + " / " + entry.getValue());
-//            }
-//        }
+        Log.i(" ","----------------------------------------------");
+        Log.i("Total loaded samples",""+samples.size());
+        Log.i(" ","----------------------------------------------");
 
         return samples;
     }
 
     // Method that saves all trained samples to the sharedPreferences
     // Before saving the objects are converted into json
-    static void saveSamples(SharedPreferences sharedPreferences, List<Sample> samples) {
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        Gson gson = new Gson();
-        String json = gson.toJson(samples);
-        editor.putString("samples",json);
-        editor.apply();
+    static void saveSamples(List<Sample> samples, SQLiteDatabase database) {
 
-        Log.i("Samples saved!","");
+        Util.createDatabases(database);
+
+        for(Sample sample : samples) {
+
+            String[] args = {""+sample.sampleID};
+            Cursor sampleCursor = database.rawQuery("SELECT * FROM samples WHERE sampleID = ?", args);
+
+            if(sampleCursor.getCount() == 0) {
+                ContentValues sampleRow = new ContentValues();
+                sampleRow.put("sampleID",sample.sampleID);
+                sampleRow.put("cellID", sample.getCellID());
+                sampleRow.put("activityID", sample.getActivityID());
+
+                database.insert("samples", null, sampleRow);
+
+                Log.i("Size "+sample.getNetworks().entrySet().size()," ");
+
+                for (Map.Entry<String, Integer> entry : sample.getNetworks().entrySet()) {
+                    ContentValues networkRow = new ContentValues();
+                    networkRow.put("sampleID", sample.sampleID);
+                    networkRow.put("BSSID", entry.getKey());
+                    networkRow.put("RSSI", entry.getValue());
+
+                    database.insert("networks", null, networkRow);
+                }
+            }
+            sampleCursor.close();
+        }
     }
 
     // Method that removes all saved samples
-    static void resetSamples(SharedPreferences sharedPreferences) {
+    static void resetSamples(SQLiteDatabase database) {
         try {
-            List<Sample> samples = new ArrayList<>();
-            saveSamples(sharedPreferences,samples);
+            database.execSQL("DROP TABLE samples");
+            database.execSQL("DROP TABLE networks");
+
+            Util.createDatabases(database);
         }catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    static void createDatabases(SQLiteDatabase database) {
+        database.execSQL("CREATE TABLE IF NOT EXISTS samples (sampleID INT PRIMARY KEY, cellID INT, activityID INT)");
+        database.execSQL("CREATE TABLE IF NOT EXISTS networks (sampleID INT, BSSID VARCHAR(40), RSSI INT)");
     }
 
     // Method that retrieves the cell precision the user has selected in settings activity

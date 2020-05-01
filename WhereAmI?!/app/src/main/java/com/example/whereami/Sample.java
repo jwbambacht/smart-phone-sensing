@@ -1,15 +1,16 @@
 package com.example.whereami;
 
 import java.util.HashMap;
-import java.util.List;
 
 public class Sample {
 
+    public int sampleID;
     public int cellID;
     public int activityID;
     public HashMap<String,Integer> networks;
 
-    public Sample(int cellID, int activityID, HashMap<String, Integer> networks) {
+    public Sample(int sampleID, int cellID, int activityID, HashMap<String, Integer> networks) {
+        this.sampleID = sampleID;
         this.cellID = cellID;
         this.activityID = activityID;
         this.networks = networks;
