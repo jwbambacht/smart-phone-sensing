@@ -24,7 +24,6 @@ import android.widget.Toast;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -68,6 +67,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
 
+                sense.setText("Sensing...");
+
                 List<Sample> allSamples = Util.loadSamples(db);
 
                 // Require at least 9 training samples before we can sense. This means that we have a minimum value for k of 3
@@ -86,6 +87,7 @@ public class MainActivity extends AppCompatActivity {
                 if (ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                     ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, MY_PERMISSIONS_ACCESS_COARSE_LOCATION);
                 } else {
+
                     Toast.makeText(MainActivity.this,"Sensing...", Toast.LENGTH_SHORT).show();
 
                     // Find and return networks
@@ -94,6 +96,8 @@ public class MainActivity extends AppCompatActivity {
                     // Apply the KNN algorithm in order to obtain the cell prediction
                     cellResult = Util.KNN(networks,allSamples,settingsSharedPreferences, cells);
                 }
+
+                sense.setText(R.string.button_sense_title);
 
                 if(cellResult != null) {
                     textViewCell.setText(cellResult);
