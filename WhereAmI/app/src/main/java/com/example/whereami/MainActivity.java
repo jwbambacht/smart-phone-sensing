@@ -10,12 +10,11 @@ import android.content.Context;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.net.wifi.ScanResult;
+import android.database.sqlite.SQLiteDatabase;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.content.Intent;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -23,26 +22,25 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity {
 
     private WifiManager wifiManager;
     private final int MY_PERMISSIONS_ACCESS_COARSE_LOCATION = 1;
     WifiReceiver receiverWifi;
-    SharedPreferences settingsSharedPreferences, allSamplesSharedPreferences;
+    SharedPreferences settingsSharedPreferences;
     TextView textViewCell, textViewActivity;
+    SQLiteDatabase db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        db = openOrCreateDatabase("database.db", MODE_PRIVATE, null);
 
         textViewCell = findViewById(R.id.textview_cell_result);
         textViewActivity = findViewById(R.id.textview_activity_result);
@@ -53,7 +51,6 @@ public class MainActivity extends AppCompatActivity {
             wifiManager.setWifiEnabled(true);
         }
 
-        allSamplesSharedPreferences = getApplicationContext().getSharedPreferences("ALL_SAMPLES", 0);
         settingsSharedPreferences = getApplicationContext().getSharedPreferences("SETTINGS", 0);
 
         Button training = (Button) findViewById(R.id.button_training);
@@ -64,18 +61,24 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        String[] cells = this.getResources().getStringArray(R.array.cell_array);
+
         Button sense = (Button) findViewById(R.id.button_sense);
         sense.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
 
-                if(Util.loadSamples(allSamplesSharedPreferences).size() < 8) {
-                    Toast.makeText(MainActivity.this, R.string.error_not_enough_samples, Toast.LENGTH_SHORT).show();
+                List<Sample> allSamples = Util.loadSamples(db);
+
+                // Require at least 9 training samples before we can sense. This means that we have a minimum value for k of 3
+                if(allSamples.size() < 9) {
+                    Toast.makeText(MainActivity.this,R.string.error_not_enough_samples, Toast.LENGTH_SHORT).show();
                     return;
                 }
 
+                // Use HashMap to find and update network easily and fast
                 HashMap<String, Integer> networks = new HashMap<String, Integer>();
-                HashMap<String, int[]> tempNetworks = new HashMap<String,int[]>();
+                int rounds = 5;
 
                 String cellResult = null;
                 String activityResult = null;
@@ -83,60 +86,13 @@ public class MainActivity extends AppCompatActivity {
                 if (ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                     ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, MY_PERMISSIONS_ACCESS_COARSE_LOCATION);
                 } else {
-
                     Toast.makeText(MainActivity.this,"Sensing...", Toast.LENGTH_SHORT).show();
 
-                    int rounds = 5;
+                    // Find and return networks
+                    networks = Util.findNetworks(wifiManager, rounds);
 
-                    for(int i = 0; i < rounds; i++) {
-                        wifiManager.startScan();
-                        List<ScanResult> scanResults = wifiManager.getScanResults();
-
-                        Log.i("ScanResults",scanResults.size()+"");
-
-                        for(ScanResult scan : scanResults) {
-                            String BSSID = scan.BSSID;
-
-                            int[] rssi;
-
-                            if(tempNetworks.containsKey(BSSID)) {
-                                rssi = tempNetworks.get(BSSID);
-                                tempNetworks.remove(BSSID);
-                            }else{
-                                rssi = new int[rounds];
-                            }
-
-                            rssi[i] = scan.level;
-
-                            tempNetworks.put(BSSID,rssi);
-                        }
-
-                        try {
-                            Thread.sleep(200);
-                        } catch(InterruptedException ex) {
-                            Thread.currentThread().interrupt();
-                        }
-                    }
-
-                    for(Map.Entry<String,int[]> entry : tempNetworks.entrySet()) {
-                        String BSSID = entry.getKey();
-                        int[] arrayRSSI = entry.getValue();
-
-                        int nonZeroElements = 0;
-                        int sum = 0;
-                        for(int i = 0; i < rounds; i++) {
-                            if(arrayRSSI[i] < 0) {
-                                nonZeroElements++;
-                                sum += arrayRSSI[i];
-                            }
-                        }
-
-                        networks.put(BSSID,(int) Math.floor(sum/nonZeroElements));
-
-                    }
-
-                    cellResult = KNN(networks);
-
+                    // Apply the KNN algorithm in order to obtain the cell prediction
+                    cellResult = Util.KNN(networks,allSamples,settingsSharedPreferences, cells);
                 }
 
                 if(cellResult != null) {
@@ -145,85 +101,8 @@ public class MainActivity extends AppCompatActivity {
                 if(activityResult != null) {
                     textViewActivity.setText(activityResult);
                 }
-
             }
         });
-    }
-
-    public String KNN(HashMap<String, Integer> sensedNetworks) {
-
-        List<Sample> allSamples = Util.loadSamples(allSamplesSharedPreferences);
-
-        List<Result> results = new ArrayList<>();
-
-        String cell = null;
-
-        int k = (int) Math.floor(Math.sqrt(allSamples.size()));
-
-        if(k % 2 == 0) {
-            k++;
-        }
-
-        for(Sample sample : allSamples) {
-            double distance = 0;
-
-            HashMap<String,Integer> networks = sample.getNetworks();
-
-            for(Map.Entry<String,Integer> entry : networks.entrySet()) {
-                String BSSID = entry.getKey();
-                Integer RSSI = entry.getValue();
-
-                if(sensedNetworks.containsKey(BSSID)) {
-                    distance += Math.pow(Math.abs(RSSI-sensedNetworks.get(BSSID)),2);
-                }else{
-                    distance += Math.pow(Math.abs(RSSI+100),2);
-                }
-            }
-
-            for(Map.Entry<String,Integer> entry : sensedNetworks.entrySet()) {
-                String BSSID = entry.getKey();
-                Integer RSSI = entry.getValue();
-
-                if(!networks.containsKey(BSSID)) {
-                    distance += Math.pow(RSSI,2);
-                }
-            }
-
-            results.add(new Result(sample, Math.sqrt(distance)));
-
-        }
-
-        Collections.sort(results, (a, b) -> a.getDistance() < b.getDistance() ? -1 : a.getDistance() == b.getDistance() ? 0 : 1);
-
-        for(Result res : results) {
-            Log.i(" ",res.toString()+"");
-        }
-
-        results = results.subList(0,k);
-
-        int precision = Util.getPrecision(settingsSharedPreferences);
-        int[] cellCounts = new int[precision];
-
-        Log.i("k=",k+"");
-
-        for(Result res : results) {
-            Log.i(" ",res.toString()+"");
-            cellCounts[res.getCellID()]++;
-        }
-
-        Log.i("Result", Arrays.toString(cellCounts));
-        int largestValue = cellCounts[0];
-        int largestIndex = 0;
-        for (int i = 1; i < cellCounts.length; i++) {
-            if ( cellCounts[i] >= largestValue ) {
-                largestValue = cellCounts[i];
-                largestIndex = i;
-            }
-        }
-
-        String[] cells = this.getResources().getStringArray(R.array.cell_array);
-
-        return cells[largestIndex];
     }
 
     @Override
@@ -265,13 +144,13 @@ public class MainActivity extends AppCompatActivity {
     private void getWifi() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(MainActivity.this, "location turned off", Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, "Location turned off", Toast.LENGTH_SHORT).show();
                 ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, MY_PERMISSIONS_ACCESS_COARSE_LOCATION);
             } else {
                 wifiManager.startScan();
             }
         } else {
-            Toast.makeText(MainActivity.this, "scanning", Toast.LENGTH_SHORT).show();
+            Toast.makeText(MainActivity.this, "Scanning networks", Toast.LENGTH_SHORT).show();
             wifiManager.startScan();
         }
     }

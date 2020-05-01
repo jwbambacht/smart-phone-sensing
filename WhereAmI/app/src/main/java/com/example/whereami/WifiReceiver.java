@@ -16,6 +16,6 @@ class WifiReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        Log.i("WifiReceiver","wifi scan completed");
+        Log.i("WiFiReceiver","Wifi scan completed");
     }
 }
