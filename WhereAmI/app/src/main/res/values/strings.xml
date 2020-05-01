@@ -1,6 +1,6 @@
 <resources>
-    <string name="app_name">Where Am I?!</string>
-    <string name="title_main_activity">Where Am I?!</string>
+    <string name="app_name">WhereAmI</string>
+    <string name="title_main_activity">WhereAmI</string>
     <string name="button_training_title">TRAIN</string>
     <string name="button_sense_title">SENSE</string>
     <string name="button_reset_title">RESET</string>
@@ -58,7 +58,7 @@
     <string name="confirm_save_settings_text">Settings successfully saved!</string>
     <string name="error_not_enough_samples">At least 8 samples required</string>
 
-    <string name="view_home_title">WhereAmI?!</string>
+    <string name="view_home_title">WhereAmI</string>
     <string name="view_training_title">Training</string>
     <string name="view_settings_title">Settings</string>
     <string name="view_sense_title">Sense</string>
