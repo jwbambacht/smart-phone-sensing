@@ -8,6 +8,7 @@ import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.util.Log;
 import androidx.appcompat.app.AppCompatActivity;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -44,7 +45,7 @@ public class Util  extends AppCompatActivity {
 
                 networks.put(BSSID,RSSI);
 
-                Log.println(0,"Network "+BSSID," and RSSI "+RSSI);
+                Log.i("Network "+BSSID," and RSSI "+RSSI);
             }
 
             networksCursor.close();
@@ -251,9 +252,8 @@ public class Util  extends AppCompatActivity {
         }
 
         // Method to give more weight to the nearest neighbor and less weight to the more distant nearest neighbors (for comparison)
-        double totalWeight = 0;
-
         // Compute individual weight for each result
+        double totalWeight = 0;
         for(Result res : kresults) {
             double weight = 1/res.getDistance();
             res.setWeight(weight);
@@ -272,16 +272,27 @@ public class Util  extends AppCompatActivity {
             weightPerCell[res.getCellID()] += res.getWeight();
         }
 
-        // Display results of weight per cell and based on majority k-nearest-neighbors only
-        Log.i("k=",k+"");
-        for(int i = 0; i < cellPrecision; i++) {
-            Log.i("Total weight for "+cells[i]," is "+weightPerCell[i]);
-        }
-        Log.i("Take only cell count:", Arrays.toString(cellCounts));
-
         // Find the index of the cell with the maximum value
-        int largestIndexCount = Util.findMaxInArray(cellCounts);
+        List<Integer> largestIndicesCount = Util.findMaxIndicesInArray(cellCounts);
+        int largestIndexCount = largestIndicesCount.get(0);
         int largestIndexWeights = Util.findMaxInArray(weightPerCell);
+
+        // Look if two cells have an equal count, and include weight per cell as tiebreaker
+        if(largestIndicesCount.size() > 1) {
+            double maxValue = weightPerCell[largestIndexCount];
+
+            for(int index : largestIndicesCount) {
+                if(weightPerCell[index] > maxValue) {
+                    maxValue = weightPerCell[index];
+                    largestIndexCount = index;
+                }
+            }
+        }
+
+        // Display results of cell count and weight per cell, based on majority
+        Log.i("k=",k+"");
+        Log.i("Cell Count Result: "+cells[largestIndexCount]+" ",Arrays.toString(cellCounts));
+        Log.i("Weight Result: "+cells[largestIndexWeights]+", ", Arrays.toString(weightPerCell));
 
         return "Cell Count: " + cells[largestIndexCount]+" \nCell Weight: "+cells[largestIndexWeights];
     }
@@ -297,6 +308,23 @@ public class Util  extends AppCompatActivity {
         }
 
         return k;
+    }
+
+    // Method to find the index/indices of the highest value in array
+    static List<Integer> findMaxIndicesInArray(double[] arr) {
+        List<Integer> indices = new ArrayList<>();
+        double maxValue = 0;
+
+        for(int i = 0; i < arr.length; i++) {
+            if(arr[i] > maxValue) {
+                maxValue = arr[i];
+                indices = new ArrayList<>();
+                indices.add(i);
+            }else if(arr[i] == maxValue) {
+                indices.add(i);
+            }
+        }
+        return indices;
     }
 
     // Method that finds the index of the maximum value in array
