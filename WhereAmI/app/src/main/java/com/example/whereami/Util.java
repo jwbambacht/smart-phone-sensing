@@ -153,46 +153,17 @@ public class Util  extends AppCompatActivity {
         }
     }
 
-    // Method that performs a network scan, repeating in rounds and take average RSSI for each network
-    static HashMap<String,Integer> findNetworks(WifiManager wifiManager, int rounds) {
+    // Method that performs a network scan
+    static HashMap<String,Integer> findNetworks(WifiManager wifiManager) {
         HashMap<String, Integer> networks = new HashMap<String, Integer>();
-        HashMap<String, int[]> tempNetworks = new HashMap<String, int[]>();
 
-        for (int i = 0; i < rounds; i++) {
-            wifiManager.startScan();
-            List<ScanResult> scanResults = wifiManager.getScanResults();
+        wifiManager.startScan();
 
-            // Sense networks, apply rounds and take the average value for RSSI to correct for outliers
-            for (ScanResult scan : scanResults) {
-                String BSSID = scan.BSSID;
-
-                int[] rssi;
-
-                if (tempNetworks.containsKey(BSSID)) {
-                    rssi = tempNetworks.get(BSSID);
-                    tempNetworks.remove(BSSID);
-                } else {
-                    rssi = new int[rounds];
-                }
-
-                rssi[i] = scan.level;
-
-                tempNetworks.put(BSSID, rssi);
-            }
-
-            try {
-                Thread.sleep(200);
-            } catch (InterruptedException ex) {
-                Thread.currentThread().interrupt();
-            }
+        // Sense networks and add to hashmap
+        for (ScanResult scan : wifiManager.getScanResults()) {
+            networks.put(scan.BSSID, scan.level);
         }
 
-        for (Map.Entry<String, int[]> entry : tempNetworks.entrySet()) {
-            String BSSID = entry.getKey();
-            int RSSI = Util.calculateAverageInArray(entry.getValue(), rounds);
-
-            networks.put(BSSID, RSSI);
-        }
         return networks;
     }
 
@@ -352,5 +323,32 @@ public class Util  extends AppCompatActivity {
         }
 
         return (int) Math.floor(sum/nonZeroElements);
+    }
+
+    static List<Network> processNetworks(List<ScanResult> scanResults) {
+        List<Network> networks = new ArrayList<>();
+
+        for(ScanResult scan : scanResults) {
+            networks.add(new Network(scan.BSSID,scan.level));
+        }
+
+        return networks;
+    }
+
+    static boolean networksEqual(List<ScanResult> networkSetOne, List<ScanResult> networkSetTwo) {
+
+        boolean equal = true;
+
+        if(networkSetOne.size() != networkSetTwo.size()) {
+            return false;
+        }
+
+        for(int i = 0; i < networkSetOne.size(); i++) {
+            if(!((networkSetOne.get(i).BSSID.equals(networkSetTwo.get(i).BSSID) && (networkSetOne.get(i).level == networkSetTwo.get(i).level)))) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

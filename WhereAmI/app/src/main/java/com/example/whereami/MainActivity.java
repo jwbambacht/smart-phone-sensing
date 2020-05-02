@@ -79,7 +79,6 @@ public class MainActivity extends AppCompatActivity {
 
                 // Use HashMap to find and update network easily and fast
                 HashMap<String, Integer> networks = new HashMap<String, Integer>();
-                int rounds = 5;
 
                 String cellResult = null;
                 String activityResult = null;
@@ -91,7 +90,7 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(MainActivity.this,"Sensing...", Toast.LENGTH_SHORT).show();
 
                     // Find and return networks
-                    networks = Util.findNetworks(wifiManager, rounds);
+                    networks = Util.findNetworks(wifiManager);
 
                     // Apply the KNN algorithm in order to obtain the cell prediction
                     cellResult = Util.KNN(networks,allSamples,settingsSharedPreferences, cells);

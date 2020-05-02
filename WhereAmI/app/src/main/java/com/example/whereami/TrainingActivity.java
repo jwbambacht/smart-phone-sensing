@@ -187,14 +187,13 @@ public class TrainingActivity extends AppCompatActivity {
     public void addToTraining(int cellID, int activityID) {
 
         HashMap<String, Integer> networks = new HashMap<String, Integer>();
-        int rounds = 5;
 
         if (ActivityCompat.checkSelfPermission(TrainingActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(TrainingActivity.this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, MY_PERMISSIONS_ACCESS_COARSE_LOCATION);
 
             Toast.makeText(getApplicationContext(), R.string.error_add_training_text, Toast.LENGTH_SHORT).show();
         } else {
-            networks = Util.findNetworks(wifiManager, rounds);
+            networks = Util.findNetworks(wifiManager);
 
             Sample newSample = new Sample(this.currentSamples.size(), cellID, activityID, networks);
             this.currentSamples.add(newSample);
