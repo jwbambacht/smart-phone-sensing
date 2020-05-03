@@ -12,10 +12,13 @@
     <string name="title_testing">TESTING</string>
     <string name="training_label_cell">CURRENT CELL</string>
 
-    <string name="textview_sense_title">You are in:</string>
-    <string name="textview_activity_title">Currenty activity:</string>
-    <string name="textview_sense_to_see">Sense to see results</string>
+    <string name="textview_sense_title">Current Location</string>
+    <string name="textview_activity_title">Current Activity:</string>
+    <string name="training_label_activity">Current Activity</string>
+    <string name="textview_sense_to_see">Sense to detect location and activity!</string>
+    <string name="textview_sense_results">Results</string>
     <string name="textview_label_warning_change">* Changing will cause the training samples to be removed</string>
+    <string name="textview_stats">Training Stats</string>
 
     <string-array name="cell_array">
         <item>Cell A</item>
@@ -27,7 +30,6 @@
         <item>Cell G</item>
         <item>Cell H</item>
     </string-array>
-    <string name="training_label_activity">CURRENT ACTIVITY</string>
     <string-array name="activity_array">
         <item>Walking</item>
         <item>Standing</item>
@@ -57,7 +59,7 @@
     <string name="error_add_training_text">An error occurred, please try again!</string>
     <string name="confirm_reset_training_text">Samples successfully removed!</string>
     <string name="confirm_save_settings_text">Settings successfully saved!</string>
-    <string name="error_not_enough_samples">At least 8 samples required</string>
+    <string name="error_not_enough_samples">At least 9 samples required</string>
     <string name="confirm_wifi_receiver_completed">WiFi Receiver completed</string>
 
     <string name="view_home_title">WhereAmI</string>

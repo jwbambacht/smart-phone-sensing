@@ -16,7 +16,6 @@
             android:orientation="vertical"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-
             android:layout_margin="10dp">
 
             <LinearLayout
@@ -88,10 +87,15 @@
         <TextView
             android:id="@+id/textview_horizontal_line"
             android:layout_width="match_parent"
-            android:layout_height="2dp"
+            android:layout_height="wrap_content"
             android:layout_below="@id/button_add_training"
+            android:text="@string/textview_stats"
             android:layout_marginTop="10dp"
-            android:background="@color/colorLight"/>
+            android:background="@color/colorMuted"
+            android:textColor="@color/colorLight"
+            android:textAlignment="textStart"
+            android:padding="10dp"
+            android:textStyle="italic"/>
 
         <ScrollView
             android:id="@+id/scrollview"

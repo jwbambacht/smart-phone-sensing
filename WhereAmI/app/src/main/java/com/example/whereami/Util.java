@@ -15,6 +15,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 public class Util  extends AppCompatActivity {
 
@@ -265,7 +266,13 @@ public class Util  extends AppCompatActivity {
         Log.i("Cell Count Result: "+cells[largestIndexCount]+" ",Arrays.toString(cellCounts));
         Log.i("Weight Result: "+cells[largestIndexWeights]+", ", Arrays.toString(weightPerCell));
 
-        return "Cell Count: " + cells[largestIndexCount]+" \nCell Weight: "+cells[largestIndexWeights];
+        return cells[largestIndexCount];
+    }
+
+    public static String activity(List<Sample> allSamples, SharedPreferences settingsSharedPreferences, String[] activities) {
+
+        Random r = new Random();
+        return activities[r.nextInt((2 - 0) + 1) + 0];
     }
 
     // Method that calculates the k-value based on the size of the trained samples
