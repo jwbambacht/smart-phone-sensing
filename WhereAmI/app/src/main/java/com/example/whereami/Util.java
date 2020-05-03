@@ -8,12 +8,14 @@ import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.util.Log;
 import androidx.appcompat.app.AppCompatActivity;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 public class Util  extends AppCompatActivity {
 
@@ -44,7 +46,7 @@ public class Util  extends AppCompatActivity {
 
                 networks.put(BSSID,RSSI);
 
-                Log.println(0,"Network "+BSSID," and RSSI "+RSSI);
+                Log.i("Network "+BSSID," and RSSI "+RSSI);
             }
 
             networksCursor.close();
@@ -152,46 +154,17 @@ public class Util  extends AppCompatActivity {
         }
     }
 
-    // Method that performs a network scan, repeating in rounds and take average RSSI for each network
-    static HashMap<String,Integer> findNetworks(WifiManager wifiManager, int rounds) {
+    // Method that performs a network scan
+    static HashMap<String,Integer> findNetworks(WifiManager wifiManager) {
         HashMap<String, Integer> networks = new HashMap<String, Integer>();
-        HashMap<String, int[]> tempNetworks = new HashMap<String, int[]>();
 
-        for (int i = 0; i < rounds; i++) {
-            wifiManager.startScan();
-            List<ScanResult> scanResults = wifiManager.getScanResults();
+        wifiManager.startScan();
 
-            // Sense networks, apply rounds and take the average value for RSSI to correct for outliers
-            for (ScanResult scan : scanResults) {
-                String BSSID = scan.BSSID;
-
-                int[] rssi;
-
-                if (tempNetworks.containsKey(BSSID)) {
-                    rssi = tempNetworks.get(BSSID);
-                    tempNetworks.remove(BSSID);
-                } else {
-                    rssi = new int[rounds];
-                }
-
-                rssi[i] = scan.level;
-
-                tempNetworks.put(BSSID, rssi);
-            }
-
-            try {
-                Thread.sleep(200);
-            } catch (InterruptedException ex) {
-                Thread.currentThread().interrupt();
-            }
+        // Sense networks and add to hashmap
+        for (ScanResult scan : wifiManager.getScanResults()) {
+            networks.put(scan.BSSID, scan.level);
         }
 
-        for (Map.Entry<String, int[]> entry : tempNetworks.entrySet()) {
-            String BSSID = entry.getKey();
-            int RSSI = Util.calculateAverageInArray(entry.getValue(), rounds);
-
-            networks.put(BSSID, RSSI);
-        }
         return networks;
     }
 
@@ -251,9 +224,8 @@ public class Util  extends AppCompatActivity {
         }
 
         // Method to give more weight to the nearest neighbor and less weight to the more distant nearest neighbors (for comparison)
-        double totalWeight = 0;
-
         // Compute individual weight for each result
+        double totalWeight = 0;
         for(Result res : kresults) {
             double weight = 1/res.getDistance();
             res.setWeight(weight);
@@ -272,18 +244,35 @@ public class Util  extends AppCompatActivity {
             weightPerCell[res.getCellID()] += res.getWeight();
         }
 
-        // Display results of weight per cell and based on majority k-nearest-neighbors only
-        Log.i("k=",k+"");
-        for(int i = 0; i < cellPrecision; i++) {
-            Log.i("Total weight for "+cells[i]," is "+weightPerCell[i]);
-        }
-        Log.i("Take only cell count:", Arrays.toString(cellCounts));
-
         // Find the index of the cell with the maximum value
-        int largestIndexCount = Util.findMaxInArray(cellCounts);
+        List<Integer> largestIndicesCount = Util.findMaxIndicesInArray(cellCounts);
+        int largestIndexCount = largestIndicesCount.get(0);
         int largestIndexWeights = Util.findMaxInArray(weightPerCell);
 
-        return "Cell Count: " + cells[largestIndexCount]+" \nCell Weight: "+cells[largestIndexWeights];
+        // Look if two cells have an equal count, and include weight per cell as tiebreaker
+        if(largestIndicesCount.size() > 1) {
+            double maxValue = weightPerCell[largestIndexCount];
+
+            for(int index : largestIndicesCount) {
+                if(weightPerCell[index] > maxValue) {
+                    maxValue = weightPerCell[index];
+                    largestIndexCount = index;
+                }
+            }
+        }
+
+        // Display results of cell count and weight per cell, based on majority
+        Log.i("k=",k+"");
+        Log.i("Cell Count Result: "+cells[largestIndexCount]+" ",Arrays.toString(cellCounts));
+        Log.i("Weight Result: "+cells[largestIndexWeights]+", ", Arrays.toString(weightPerCell));
+
+        return cells[largestIndexWeights];
+    }
+
+    public static String activity(List<Sample> allSamples, SharedPreferences settingsSharedPreferences, String[] activities) {
+
+        Random r = new Random();
+        return activities[r.nextInt((2 - 0) + 1) + 0];
     }
 
     // Method that calculates the k-value based on the size of the trained samples
@@ -296,11 +285,24 @@ public class Util  extends AppCompatActivity {
             return 7;
         }
 
-        if(k % 2 == 0) {
-            return k++;
-        }
-
         return k;
+    }
+
+    // Method to find the index/indices of the highest value in array
+    static List<Integer> findMaxIndicesInArray(double[] arr) {
+        List<Integer> indices = new ArrayList<>();
+        double maxValue = 0;
+
+        for(int i = 0; i < arr.length; i++) {
+            if(arr[i] > maxValue) {
+                maxValue = arr[i];
+                indices = new ArrayList<>();
+                indices.add(i);
+            }else if(arr[i] == maxValue) {
+                indices.add(i);
+            }
+        }
+        return indices;
     }
 
     // Method that finds the index of the maximum value in array
@@ -328,5 +330,32 @@ public class Util  extends AppCompatActivity {
         }
 
         return (int) Math.floor(sum/nonZeroElements);
+    }
+
+    static List<Network> processNetworks(List<ScanResult> scanResults) {
+        List<Network> networks = new ArrayList<>();
+
+        for(ScanResult scan : scanResults) {
+            networks.add(new Network(scan.BSSID,scan.level));
+        }
+
+        return networks;
+    }
+
+    static boolean networksEqual(List<ScanResult> networkSetOne, List<ScanResult> networkSetTwo) {
+
+        boolean equal = true;
+
+        if(networkSetOne.size() != networkSetTwo.size()) {
+            return false;
+        }
+
+        for(int i = 0; i < networkSetOne.size(); i++) {
+            if(!((networkSetOne.get(i).BSSID.equals(networkSetTwo.get(i).BSSID) && (networkSetOne.get(i).level == networkSetTwo.get(i).level)))) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

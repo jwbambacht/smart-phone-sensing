@@ -15,16 +15,17 @@ import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.content.Intent;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.GridLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -32,8 +33,9 @@ public class MainActivity extends AppCompatActivity {
     private final int MY_PERMISSIONS_ACCESS_COARSE_LOCATION = 1;
     WifiReceiver receiverWifi;
     SharedPreferences settingsSharedPreferences;
-    TextView textViewCell, textViewActivity;
     SQLiteDatabase db;
+    GridLayout leftGridLayout, rightGridLayout;
+    TextView senseToSee, cellLabel, activityLabel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,9 +43,6 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         db = openOrCreateDatabase("database.db", MODE_PRIVATE, null);
-
-        textViewCell = findViewById(R.id.textview_cell_result);
-        textViewActivity = findViewById(R.id.textview_activity_result);
 
         wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         if (!wifiManager.isWifiEnabled()) {
@@ -62,6 +61,16 @@ public class MainActivity extends AppCompatActivity {
         });
 
         String[] cells = this.getResources().getStringArray(R.array.cell_array);
+        String[] activities = this.getResources().getStringArray(R.array.activity_array);
+
+        senseToSee = (TextView) findViewById(R.id.textview_label_sense);
+        cellLabel = (TextView) findViewById(R.id.textview_label_cell);
+        activityLabel = (TextView) findViewById(R.id.textview_label_activity);
+        leftGridLayout = (GridLayout) findViewById(R.id.gridlayout_left_cells);
+        rightGridLayout = (GridLayout) findViewById(R.id.gridlayout_right_cells);
+
+        cellLabel.setVisibility(View.INVISIBLE);
+        activityLabel.setVisibility(View.INVISIBLE);
 
         Button sense = (Button) findViewById(R.id.button_sense);
         sense.setOnClickListener(new View.OnClickListener() {
@@ -78,7 +87,6 @@ public class MainActivity extends AppCompatActivity {
 
                 // Use HashMap to find and update network easily and fast
                 HashMap<String, Integer> networks = new HashMap<String, Integer>();
-                int rounds = 5;
 
                 String cellResult = null;
                 String activityResult = null;
@@ -86,23 +94,53 @@ public class MainActivity extends AppCompatActivity {
                 if (ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                     ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, MY_PERMISSIONS_ACCESS_COARSE_LOCATION);
                 } else {
+
                     Toast.makeText(MainActivity.this,"Sensing...", Toast.LENGTH_SHORT).show();
 
                     // Find and return networks
-                    networks = Util.findNetworks(wifiManager, rounds);
+                    networks = Util.findNetworks(wifiManager);
 
                     // Apply the KNN algorithm in order to obtain the cell prediction
                     cellResult = Util.KNN(networks,allSamples,settingsSharedPreferences, cells);
-                }
+                    activityResult = Util.activity(allSamples,settingsSharedPreferences, activities);
 
-                if(cellResult != null) {
-                    textViewCell.setText(cellResult);
-                }
-                if(activityResult != null) {
-                    textViewActivity.setText(activityResult);
+                    senseToSee.setText(R.string.textview_sense_results);
+                    cellLabel.setVisibility(View.VISIBLE);
+                    activityLabel.setVisibility(View.VISIBLE);
+
+                    createCellGrid(leftGridLayout, cells, Util.getPrecision(settingsSharedPreferences), cellResult);
+                    createCellGrid(rightGridLayout, activities, activities.length,activityResult);
                 }
             }
         });
+    }
+
+    public void createCellGrid(GridLayout gridLayout, String[] cellNames, int max, String result) {
+        gridLayout.removeAllViews();
+
+        for(int i = 0; i < max; i++) {
+            TextView textView = new TextView(this);
+            textView.setTextColor(0xFFF8F9FA);
+            if(cellNames[i].equals(result)) {
+                textView.setTextColor(0xFF343A40);
+                textView.setBackgroundResource(R.drawable.cell_open);
+            }else{
+                textView.setBackgroundResource(R.drawable.cell_closed);
+            }
+            textView.setGravity(Gravity.CENTER_VERTICAL);
+            textView.setHeight(50);
+            textView.setText(cellNames[i]);
+            textView.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+
+            gridLayout.addView(textView);
+
+            GridLayout.LayoutParams param = new GridLayout.LayoutParams();
+            param.height = GridLayout.LayoutParams.WRAP_CONTENT;
+            param.width = GridLayout.LayoutParams.MATCH_PARENT;
+            param.setGravity(Gravity.CENTER);
+            param.bottomMargin = 20;
+            textView.setLayoutParams(param);
+        }
     }
 
     @Override
@@ -126,9 +164,11 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-
-        textViewCell.setText(R.string.textview_sense_to_see);
-        textViewActivity.setText(R.string.textview_sense_to_see);
+        leftGridLayout.removeAllViews();
+        rightGridLayout.removeAllViews();
+        senseToSee.setText(R.string.textview_sense_to_see);
+        cellLabel.setVisibility(View.INVISIBLE);
+        activityLabel.setVisibility(View.INVISIBLE);
     }
 
     @Override

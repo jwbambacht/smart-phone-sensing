@@ -9,14 +9,13 @@
 
     <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent" >
+        android:layout_height="match_parent">
 
         <LinearLayout
             android:id="@+id/linear_layout_row_column"
             android:orientation="vertical"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:layout_alignParentTop="true"
             android:layout_margin="10dp">
 
             <LinearLayout
@@ -79,10 +78,44 @@
             android:layout_width="match_parent"
             android:layout_height="50dp"
             android:layout_below="@+id/linear_layout_row_column"
-            android:layout_margin="10dp"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="10dp"
             android:fontFamily="sans-serif-thin"
             android:text="@string/button_training_submit"
             android:textSize="24sp" />
+
+        <TextView
+            android:id="@+id/textview_horizontal_line"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/button_add_training"
+            android:text="@string/textview_stats"
+            android:layout_marginTop="10dp"
+            android:background="@color/colorMuted"
+            android:textColor="@color/colorLight"
+            android:textAlignment="textStart"
+            android:padding="10dp"
+            android:textStyle="italic"/>
+
+        <ScrollView
+            android:id="@+id/scrollview"
+            android:layout_width="match_parent"
+            android:layout_height="fill_parent"
+            android:layout_below="@+id/textview_horizontal_line">
+
+            <LinearLayout
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent">
+
+            <TableLayout
+                android:id="@+id/table_samples"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="10dp"/>
+
+            </LinearLayout>
+
+        </ScrollView>
 
     </RelativeLayout>
 

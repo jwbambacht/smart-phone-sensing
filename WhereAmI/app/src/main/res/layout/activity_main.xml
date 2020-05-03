@@ -11,24 +11,26 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" >
 
-        <Button
-            android:id="@+id/button_sense"
+        <TextView
+            android:id="@+id/textview_label_sense"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentTop="true"
+            android:textAlignment="center"
+            android:textSize="16sp"
+            android:text="@string/textview_sense_to_see"
+            android:textColor="@color/colorLight"
+            android:textStyle="bold"
             android:layout_marginTop="10dp"
-            android:layout_marginLeft="10dp"
-            android:layout_marginRight="10dp"
-            android:fontFamily="sans-serif-thin"
-            android:text="@string/button_sense_title"
-            android:textSize="24sp" />
+            android:drawableBottom="@color/colorLight"/>
+
 
         <LinearLayout
             android:id="@+id/column_title_row"
             android:orientation="horizontal"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@+id/button_sense"
+            android:layout_below="@+id/textview_label_sense"
             android:layout_marginTop="10dp"
             android:layout_marginLeft="10dp"
             android:layout_marginRight="10dp">
@@ -67,41 +69,57 @@
             android:layout_marginLeft="10dp"
             android:layout_marginRight="10dp">
 
-            <TextView
-                android:id="@+id/textview_cell_result"
+            <LinearLayout
+                android:id="@+id/left_column"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:textColor="@color/colorDark"
-                android:layout_marginStart="5dp"
-                android:layout_marginEnd="5dp"
                 android:layout_weight="1"
-                android:textSize="16sp"
-                android:textAlignment="center"
-                android:background="@color/colorLight"
-                android:padding="10dp"
-                android:text="@string/textview_sense_to_see" />
+                android:orientation="vertical"
+                android:layout_marginStart="5dp"
+                android:layout_marginEnd="5dp">
 
-            <TextView
-                android:id="@+id/textview_activity_result"
+                <GridLayout
+                    android:id="@+id/gridlayout_left_cells"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:columnCount="1"
+                    />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/right_column"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="5dp"
-                android:layout_marginEnd="5dp"
-                android:textColor="@color/colorDark"
                 android:layout_weight="1"
-                android:textSize="16sp"
-                android:textAlignment="center"
-                android:background="@color/colorLight"
-                android:padding="10dp"
-                android:text="@string/textview_sense_to_see"/>
+                android:orientation="vertical"
+                android:layout_marginStart="5dp"
+                android:layout_marginEnd="5dp">
 
+                <GridLayout
+                    android:id="@+id/gridlayout_right_cells"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:columnCount="1"
+                    />
+            </LinearLayout>
         </LinearLayout>
+
+        <Button
+            android:id="@+id/button_sense"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_above="@+id/button_training"
+            android:layout_marginTop="10dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:fontFamily="sans-serif-thin"
+            android:text="@string/button_sense_title"
+            android:textSize="24sp" />
 
         <Button
             android:id="@+id/button_training"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:layout_marginBottom="10dp"
             android:layout_marginLeft="10dp"
             android:layout_marginRight="10dp"
