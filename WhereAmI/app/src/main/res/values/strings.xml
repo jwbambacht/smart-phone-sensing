@@ -3,14 +3,13 @@
     <string name="title_main_activity">WhereAmI</string>
     <string name="button_training_title">TRAIN</string>
     <string name="button_sense_title">SENSE</string>
-    <string name="button_reset_title">RESET</string>
+    <string name="button_reset_title">RESET SAMPLES</string>
     <string name="button_save_title">SAVE</string>
     <string name="button_back_title">BACK</string>
     <string name="button_training_submit">Add training sample</string>
 
     <string name="title_training">TRAINING</string>
     <string name="title_testing">TESTING</string>
-    <string name="training_label_cell">CURRENT CELL</string>
 
     <string name="textview_sense_title">Current Location</string>
     <string name="textview_activity_title">Current Activity:</string>
@@ -50,7 +49,6 @@
 
     <string name="textview_label_method">Method</string>
     <string name="textview_label_precision">Precision</string>
-    <string name="textview_label_reset">Reset training data</string>
     <string name="textview_label_total_samples">Total training samples</string>
 
     <string name="dialog_reset_title">Are u sure?</string>
