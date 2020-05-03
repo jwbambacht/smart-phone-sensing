@@ -266,7 +266,7 @@ public class Util  extends AppCompatActivity {
         Log.i("Cell Count Result: "+cells[largestIndexCount]+" ",Arrays.toString(cellCounts));
         Log.i("Weight Result: "+cells[largestIndexWeights]+", ", Arrays.toString(weightPerCell));
 
-        return cells[largestIndexCount];
+        return cells[largestIndexWeights];
     }
 
     public static String activity(List<Sample> allSamples, SharedPreferences settingsSharedPreferences, String[] activities) {
