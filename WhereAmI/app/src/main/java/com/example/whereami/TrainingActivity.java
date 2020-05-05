@@ -9,9 +9,12 @@ import android.content.res.ColorStateList;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.hardware.Sensor;
+import android.hardware.SensorManager;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
 import android.widget.Button;
@@ -36,6 +39,10 @@ public class TrainingActivity extends AppCompatActivity {
     private WifiManager wifiManager;
     private final int MY_PERMISSIONS_ACCESS_COARSE_LOCATION = 1;
     WifiReceiver receiverWifi;
+
+    //Accelerometer
+    private SensorManager mSensorManager;
+    private AccelerometerListener accelerometer;
 
     // Storage helpers
     SharedPreferences settingsSharedPreferences;
@@ -70,6 +77,9 @@ public class TrainingActivity extends AppCompatActivity {
         this.tableSamples = (TableLayout) findViewById(R.id.table_samples);
         this.tableSamples.setStretchAllColumns(true);
         this.loadTableData(this.tableSamples);
+
+        SensorManager mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+        accelerometer = new AccelerometerListener(mSensorManager);
 
         wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         if (!wifiManager.isWifiEnabled()) {
