@@ -82,8 +82,8 @@ public class MainActivity extends AppCompatActivity {
 
                 List<Sample> allSamples = Util.loadSamples(db);
 
-                // Require at least 9 training samples before we can sense. This means that we have a minimum value for k of 3
-                if(allSamples.size() < 9) {
+                // Require more than 2*precision training samples before we can sense. This means that we have a minimum value for k=3 for the situation of 4 cells
+                if(allSamples.size() <= 2*Util.getPrecision(settingsSharedPreferences)) {
                     Toast.makeText(MainActivity.this,R.string.error_not_enough_samples, Toast.LENGTH_SHORT).show();
                     return;
                 }
