@@ -57,7 +57,6 @@
     <string name="error_add_training_text">An error occurred, please try again!</string>
     <string name="confirm_reset_training_text">Samples successfully removed!</string>
     <string name="confirm_save_settings_text">Settings successfully saved!</string>
-    <string name="error_not_enough_samples">At least 9 samples required</string>
     <string name="confirm_wifi_receiver_completed">WiFi Receiver completed</string>
 
     <string name="view_home_title">WhereAmI</string>

@@ -89,8 +89,9 @@ public class MainActivity extends AppCompatActivity {
                 List<Sample> allSamples = Util.loadSamples(db);
 
                 // Require more than 2*precision training samples before we can sense. This means that we have a minimum value for k=3 for the situation of 4 cells
-                if(allSamples.size() <= 2*Util.getPrecision(settingsSharedPreferences)) {
-                    Toast.makeText(MainActivity.this,R.string.error_not_enough_samples, Toast.LENGTH_SHORT).show();
+                int requiredSamples = 2*Util.getPrecision(settingsSharedPreferences);
+                if(allSamples.size() <= requiredSamples) {
+                    Toast.makeText(MainActivity.this,"At least "+(requiredSamples+1)+" samples required", Toast.LENGTH_SHORT).show();
                     return;
                 }
 
@@ -139,7 +140,7 @@ public class MainActivity extends AppCompatActivity {
                 textView.setBackgroundResource(R.drawable.cell_closed);
             }
             textView.setGravity(Gravity.CENTER_VERTICAL);
-            textView.setHeight(50);
+            textView.setHeight(70);
             textView.setText(cellNames[i]);
             textView.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
 
