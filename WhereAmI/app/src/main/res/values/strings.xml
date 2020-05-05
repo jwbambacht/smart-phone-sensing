@@ -48,7 +48,7 @@
     </string-array>
 
     <string name="textview_label_method">Method</string>
-    <string name="textview_label_precision">Precision</string>
+    <string name="textview_label_precision">Localization Precision</string>
     <string name="textview_label_total_samples">Total training samples</string>
 
     <string name="dialog_reset_title">Are u sure?</string>
