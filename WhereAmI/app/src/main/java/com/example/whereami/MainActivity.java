@@ -105,10 +105,12 @@ public class MainActivity extends AppCompatActivity {
 
                     // Find and return networks
                     networks = Util.findNetworks(wifiManager);
+                    // Get the feature from accelerometer
+                    float[] activityFeature = accelerometer.getFeature(AccelerometerListener.MIN_MAX);
 
                     // Apply the KNN algorithm in order to obtain the cell prediction
                     cellResult = Util.KNN(networks,allSamples,settingsSharedPreferences, cells);
-                    activityResult = Util.activity(allSamples,settingsSharedPreferences, activities);
+                    activityResult = Util.activity(activityFeature, allSamples,settingsSharedPreferences, activities);
 
                     senseToSee.setText(R.string.textview_sense_results);
                     cellLabel.setVisibility(View.VISIBLE);

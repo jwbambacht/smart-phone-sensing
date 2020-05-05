@@ -290,10 +290,80 @@ public class Util  extends AppCompatActivity {
         return cells[largestIndexWeights];
     }
 
-    public static String activity(List<Sample> allSamples, SharedPreferences settingsSharedPreferences, String[] activities) {
+    public static String activity(float[] sensedActivityFeature, List<Sample> allSamples, SharedPreferences settingsSharedPreferences, String[] activities) {
+        List<Result> results = new ArrayList<>();
 
-        Random r = new Random();
-        return activities[r.nextInt((2 - 0) + 1) + 0];
+        int activityPrecision = activities.length;
+        double[] activityCounts = new double[activityPrecision];
+        int k = Util.calculateK(allSamples.size());
+
+        // For each trained sample we want to compute the distance to the sensed sample
+        for(Sample sample : allSamples) {
+            double distance = 0;
+            float[] activity = sample.getActivityFeature();
+
+            // Distance from sensed activity to trained activity
+            distance += Math.pow(sensedActivityFeature[0] - activity[0], 2);
+            distance += Math.pow(sensedActivityFeature[1] - activity[1], 2);
+            distance += Math.pow(sensedActivityFeature[2] - activity[2], 2);
+
+            results.add(new Result(sample, Math.sqrt(distance)));
+        }
+
+        // Sort the distances in increasing order
+        Collections.sort(results, (a, b) -> a.getDistance() < b.getDistance() ? -1 : a.getDistance() == b.getDistance() ? 0 : 1);
+        // Take the k nearest measurements (with lowest distance)
+        List<Result> kresults = results.subList(0,k);
+
+        // Count the number of neighbors in each belonging to each activity
+        for(Result res : kresults) {
+            Log.i(" ",res.activityToString()+"");
+            activityCounts[res.getActivityID()]++;
+        }
+
+        // Compute individual weight for each result
+        double totalWeight = 0;
+        for(Result res : kresults) {
+            double weight = 1/res.getDistance();
+            res.setWeight(weight);
+            totalWeight += weight;
+        }
+
+        // Normalize the weight for each result
+        for(Result res : kresults) {
+            res.normalizeWeight(totalWeight);
+        }
+
+        // Compute how much weight contributes to each activity prediction
+        double[] weightPerActivity = new double[activityPrecision];
+
+        for(Result res : kresults) {
+            weightPerActivity[res.getActivityID()] += res.getWeight();
+        }
+
+        // Find the index of the activity with the maximum value
+        List<Integer> largestIndicesCount = Util.findMaxIndicesInArray(activityCounts);
+        int largestIndexCount = largestIndicesCount.get(0);
+        int largestIndexWeights = Util.findMaxInArray(weightPerActivity);
+
+        // Look if two cells have an equal count, and include weight per activity as tiebreaker
+        if(largestIndicesCount.size() > 1) {
+            double maxValue = weightPerActivity[largestIndexCount];
+
+            for(int index : largestIndicesCount) {
+                if(weightPerActivity[index] > maxValue) {
+                    maxValue = weightPerActivity[index];
+                    largestIndexCount = index;
+                }
+            }
+        }
+
+        // Display results of activity count and weight per activity, based on majority
+        Log.i("k=",k+"");
+        Log.i("ActivityCount Result: "+activities[largestIndexCount]+" ",Arrays.toString(activityCounts));
+        Log.i("Weight Result: "+activities[largestIndexWeights]+", ", Arrays.toString(weightPerActivity));
+
+        return activities[largestIndexWeights];
     }
 
     // Method that calculates the k-value based on the size of the trained samples
