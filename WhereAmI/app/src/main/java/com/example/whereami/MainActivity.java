@@ -42,6 +42,9 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        getSupportActionBar().setHomeAsUpIndicator(R.drawable.ic_whereami_icon_white);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+
         db = openOrCreateDatabase("database.db", MODE_PRIVATE, null);
 
         wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
