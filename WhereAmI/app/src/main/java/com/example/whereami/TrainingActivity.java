@@ -9,9 +9,12 @@ import android.content.res.ColorStateList;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.hardware.Sensor;
+import android.hardware.SensorManager;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
 import android.widget.Button;
@@ -36,6 +39,10 @@ public class TrainingActivity extends AppCompatActivity {
     private WifiManager wifiManager;
     private final int MY_PERMISSIONS_ACCESS_COARSE_LOCATION = 1;
     WifiReceiver receiverWifi;
+
+    //Accelerometer
+    private SensorManager mSensorManager;
+    private AccelerometerListener accelerometer;
 
     // Storage helpers
     SharedPreferences settingsSharedPreferences;
@@ -70,6 +77,9 @@ public class TrainingActivity extends AppCompatActivity {
         this.tableSamples = (TableLayout) findViewById(R.id.table_samples);
         this.tableSamples.setStretchAllColumns(true);
         this.loadTableData(this.tableSamples);
+
+        SensorManager mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+        accelerometer = new AccelerometerListener(mSensorManager);
 
         wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         if (!wifiManager.isWifiEnabled()) {
@@ -195,7 +205,10 @@ public class TrainingActivity extends AppCompatActivity {
         } else {
             networks = Util.findNetworks(wifiManager);
 
-            Sample newSample = new Sample(this.currentSamples.size(), cellID, activityID, networks);
+            float[] activityFeature = accelerometer.getFeature(AccelerometerListener.MIN_MAX);
+            Log.i("activityFeature", String.format("[%.2f,%.2f,%.2f]",
+                activityFeature[0], activityFeature[1], activityFeature[2]));
+            Sample newSample = new Sample(this.currentSamples.size(), cellID, activityID, networks, activityFeature);
             this.currentSamples.add(newSample);
 
             Util.saveSamples(this.currentSamples,this.db);

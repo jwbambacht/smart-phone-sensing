@@ -1,9 +1,12 @@
 package com.example.whereami;
 
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.hardware.Sensor;
+import android.hardware.SensorManager;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.util.Log;
@@ -27,19 +30,27 @@ public class Util  extends AppCompatActivity {
 
         List<Sample> samples = new ArrayList<>();
 
-        Cursor sampleCursor = database.rawQuery("SELECT sampleID, cellID, activityID FROM samples", null);
-
+        Cursor sampleCursor = database.rawQuery("SELECT sampleID, cellID, activityID/*, activityFeatureX, activityFeatureY, activityFeatureZ*/ FROM samples", null);
         while(sampleCursor.moveToNext()) {
             int sampleID = sampleCursor.getInt(0);
             int cellID = sampleCursor.getInt(1);
             int activityID = sampleCursor.getInt(2);
 
+
             HashMap<String,Integer> networks = new HashMap<String,Integer>();
+            float[] activityFeature = new float[3];
 
             String[] args = {""+sampleID};
             Cursor networksCursor = database.rawQuery("SELECT sampleID, BSSID, RSSI FROM networks WHERE sampleID = ?", args);
+            Cursor activityFeatureCursor = database.rawQuery("SELECT sampleID, featureX, featureY, featureZ FROM activityFeature WHERE sampleID = ?", args);
 
-            Log.i("Sample "+sampleID,"cellID "+cellID+", activityID "+activityID+", "+networksCursor.getCount()+" networks");
+            Log.i("Sample "+sampleID,"cellID "+cellID+", activityID "+activityID+", "+networksCursor.getCount()+" networks, "+activityFeatureCursor.getCount()+" activities");
+
+            while(activityFeatureCursor.moveToNext()){
+                activityFeature[0] = activityFeatureCursor.getFloat(1);
+                activityFeature[1] = activityFeatureCursor.getFloat(2);
+                activityFeature[2] = activityFeatureCursor.getFloat(3);
+            }
             while(networksCursor.moveToNext()) {
                 String BSSID = networksCursor.getString(1);
                 int RSSI = networksCursor.getInt(2);
@@ -51,7 +62,7 @@ public class Util  extends AppCompatActivity {
 
             networksCursor.close();
 
-            samples.add(new Sample(sampleID,cellID,activityID,networks));
+            samples.add(new Sample(sampleID,cellID,activityID,networks,activityFeature));
         }
 
         sampleCursor.close();
@@ -82,6 +93,14 @@ public class Util  extends AppCompatActivity {
 
                 database.insert("samples", null, sampleRow);
 
+                ContentValues activityFeatureRow = new ContentValues();
+                activityFeatureRow.put("sampleID", sample.sampleID);
+                activityFeatureRow.put("featureX", sample.activityFeature[0]);
+                activityFeatureRow.put("featureY", sample.activityFeature[1]);
+                activityFeatureRow.put("featureZ", sample.activityFeature[2]);
+
+                database.insert("activityFeature", null, activityFeatureRow);
+
                 Log.i("Size "+sample.getNetworks().entrySet().size()," ");
 
                 for (Map.Entry<String, Integer> entry : sample.getNetworks().entrySet()) {
@@ -102,6 +121,7 @@ public class Util  extends AppCompatActivity {
         try {
             database.execSQL("DROP TABLE samples");
             database.execSQL("DROP TABLE networks");
+            database.execSQL("DROP TABLE activityFeature");
 
             Util.createDatabases(database);
         }catch (Exception e) {
@@ -110,8 +130,9 @@ public class Util  extends AppCompatActivity {
     }
 
     static void createDatabases(SQLiteDatabase database) {
-        database.execSQL("CREATE TABLE IF NOT EXISTS samples (sampleID INT PRIMARY KEY, cellID INT, activityID INT)");
+        database.execSQL("CREATE TABLE IF NOT EXISTS samples (sampleID INT PRIMARY KEY, cellID INT, activityID INT/*, activityFeatureX REAL, activityFeatureY REAL, activityFeatureZ REAL*/)");
         database.execSQL("CREATE TABLE IF NOT EXISTS networks (sampleID INT, BSSID VARCHAR(40), RSSI INT)");
+        database.execSQL("CREATE TABLE IF NOT EXISTS activityFeature (sampleID INT, featureX REAL, featureY REAL, featureZ REAL)");
     }
 
     // Method that retrieves the cell precision the user has selected in settings activity
@@ -269,10 +290,80 @@ public class Util  extends AppCompatActivity {
         return cells[largestIndexWeights];
     }
 
-    public static String activity(List<Sample> allSamples, SharedPreferences settingsSharedPreferences, String[] activities) {
+    public static String activity(float[] sensedActivityFeature, List<Sample> allSamples, SharedPreferences settingsSharedPreferences, String[] activities) {
+        List<Result> results = new ArrayList<>();
 
-        Random r = new Random();
-        return activities[r.nextInt((2 - 0) + 1) + 0];
+        int activityPrecision = activities.length;
+        double[] activityCounts = new double[activityPrecision];
+        int k = Util.calculateK(allSamples.size());
+
+        // For each trained sample we want to compute the distance to the sensed sample
+        for(Sample sample : allSamples) {
+            double distance = 0;
+            float[] activity = sample.getActivityFeature();
+
+            // Distance from sensed activity to trained activity
+            distance += Math.pow(sensedActivityFeature[0] - activity[0], 2);
+            distance += Math.pow(sensedActivityFeature[1] - activity[1], 2);
+            distance += Math.pow(sensedActivityFeature[2] - activity[2], 2);
+
+            results.add(new Result(sample, Math.sqrt(distance)));
+        }
+
+        // Sort the distances in increasing order
+        Collections.sort(results, (a, b) -> a.getDistance() < b.getDistance() ? -1 : a.getDistance() == b.getDistance() ? 0 : 1);
+        // Take the k nearest measurements (with lowest distance)
+        List<Result> kresults = results.subList(0,k);
+
+        // Count the number of neighbors in each belonging to each activity
+        for(Result res : kresults) {
+            Log.i(" ",res.activityToString()+"");
+            activityCounts[res.getActivityID()]++;
+        }
+
+        // Compute individual weight for each result
+        double totalWeight = 0;
+        for(Result res : kresults) {
+            double weight = 1/res.getDistance();
+            res.setWeight(weight);
+            totalWeight += weight;
+        }
+
+        // Normalize the weight for each result
+        for(Result res : kresults) {
+            res.normalizeWeight(totalWeight);
+        }
+
+        // Compute how much weight contributes to each activity prediction
+        double[] weightPerActivity = new double[activityPrecision];
+
+        for(Result res : kresults) {
+            weightPerActivity[res.getActivityID()] += res.getWeight();
+        }
+
+        // Find the index of the activity with the maximum value
+        List<Integer> largestIndicesCount = Util.findMaxIndicesInArray(activityCounts);
+        int largestIndexCount = largestIndicesCount.get(0);
+        int largestIndexWeights = Util.findMaxInArray(weightPerActivity);
+
+        // Look if two cells have an equal count, and include weight per activity as tiebreaker
+        if(largestIndicesCount.size() > 1) {
+            double maxValue = weightPerActivity[largestIndexCount];
+
+            for(int index : largestIndicesCount) {
+                if(weightPerActivity[index] > maxValue) {
+                    maxValue = weightPerActivity[index];
+                    largestIndexCount = index;
+                }
+            }
+        }
+
+        // Display results of activity count and weight per activity, based on majority
+        Log.i("k=",k+"");
+        Log.i("ActivityCount Result: "+activities[largestIndexCount]+" ",Arrays.toString(activityCounts));
+        Log.i("Weight Result: "+activities[largestIndexWeights]+", ", Arrays.toString(weightPerActivity));
+
+        return activities[largestIndexWeights];
     }
 
     // Method that calculates the k-value based on the size of the trained samples
