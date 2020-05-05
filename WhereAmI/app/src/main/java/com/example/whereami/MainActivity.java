@@ -11,10 +11,12 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.sqlite.SQLiteDatabase;
+import android.hardware.SensorManager;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.content.Intent;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -30,6 +32,7 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
 
     private WifiManager wifiManager;
+    private AccelerometerListener accelerometer;
     private final int MY_PERMISSIONS_ACCESS_COARSE_LOCATION = 1;
     WifiReceiver receiverWifi;
     SharedPreferences settingsSharedPreferences;
@@ -52,6 +55,9 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(getApplicationContext(), "Turning WiFi ON...", Toast.LENGTH_LONG).show();
             wifiManager.setWifiEnabled(true);
         }
+
+        SensorManager mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+        accelerometer = new AccelerometerListener(mSensorManager);
 
         settingsSharedPreferences = getApplicationContext().getSharedPreferences("SETTINGS", 0);
 
@@ -102,10 +108,12 @@ public class MainActivity extends AppCompatActivity {
 
                     // Find and return networks
                     networks = Util.findNetworks(wifiManager);
+                    // Get the feature from accelerometer
+                    float[] activityFeature = accelerometer.getFeature(AccelerometerListener.MIN_MAX);
 
                     // Apply the KNN algorithm in order to obtain the cell prediction
                     cellResult = Util.KNN(networks,allSamples,settingsSharedPreferences, cells);
-                    activityResult = Util.activity(allSamples,settingsSharedPreferences, activities);
+                    activityResult = Util.activity(activityFeature, allSamples,settingsSharedPreferences, activities);
 
                     senseToSee.setText(R.string.textview_sense_results);
                     cellLabel.setVisibility(View.VISIBLE);

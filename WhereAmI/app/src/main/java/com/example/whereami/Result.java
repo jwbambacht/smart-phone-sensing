@@ -19,6 +19,8 @@ public class Result {
         return this.sample.cellID;
     }
 
+    public int getActivityID() { return this.sample.activityID; }
+
     public void setWeight(double weight) {
         this.weight = weight;
     }
@@ -33,5 +35,9 @@ public class Result {
 
     public String toString() {
         return "Cell with id " + this.sample.cellID + " and distance " + this.distance;
+    }
+
+    public String activityToString() {
+        return "Activity with id " + this.sample.activityID + " and distance " + this.distance;
     }
 }
