@@ -91,7 +91,7 @@ public class MainActivity extends AppCompatActivity {
                 // Require more than 2*precision training samples before we can sense. This means that we have a minimum value for k=3 for the situation of 4 cells
                 int requiredSamples = 2*Util.getPrecision(settingsSharedPreferences);
                 if(allSamples.size() <= requiredSamples) {
-                    Toast.makeText(MainActivity.this,"At least "+requiredSamples+" samples required", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this,"At least "+(requiredSamples+1)+" samples required", Toast.LENGTH_SHORT).show();
                     return;
                 }
 
