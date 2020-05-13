@@ -283,9 +283,9 @@ public class Util  extends AppCompatActivity {
         }
 
         // Display results of cell count and weight per cell, based on majority
-        Log.i("k=",k+"");
+        /*Log.i("k=",k+"");
         Log.i("Cell Count Result: "+cells[largestIndexCount]+" ",Arrays.toString(cellCounts));
-        Log.i("Weight Result: "+cells[largestIndexWeights]+", ", Arrays.toString(weightPerCell));
+        Log.i("Weight Result: "+cells[largestIndexWeights]+", ", Arrays.toString(weightPerCell));*/
 
         return cells[largestIndexWeights];
     }
@@ -317,7 +317,7 @@ public class Util  extends AppCompatActivity {
 
         // Count the number of neighbors in each belonging to each activity
         for(Result res : kresults) {
-            Log.i(" ",res.activityToString()+"");
+            //Log.i(" ",res.activityToString()+"");
             activityCounts[res.getActivityID()]++;
         }
 
@@ -359,9 +359,9 @@ public class Util  extends AppCompatActivity {
         }
 
         // Display results of activity count and weight per activity, based on majority
-        Log.i("k=",k+"");
+        /*Log.i("k=",k+"");
         Log.i("ActivityCount Result: "+activities[largestIndexCount]+" ",Arrays.toString(activityCounts));
-        Log.i("Weight Result: "+activities[largestIndexWeights]+", ", Arrays.toString(weightPerActivity));
+        Log.i("Weight Result: "+activities[largestIndexWeights]+", ", Arrays.toString(weightPerActivity));*/
 
         return activities[largestIndexWeights];
     }

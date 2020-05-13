@@ -206,8 +206,8 @@ public class TrainingActivity extends AppCompatActivity {
             networks = Util.findNetworks(wifiManager);
 
             float[] activityFeature = accelerometer.getFeature(AccelerometerListener.MIN_MAX);
-            Log.i("activityFeature", String.format("[%.2f,%.2f,%.2f]",
-                activityFeature[0], activityFeature[1], activityFeature[2]));
+            /*Log.i("activityFeature", String.format("[%.2f,%.2f,%.2f]",
+                activityFeature[0], activityFeature[1], activityFeature[2]));*/
             Sample newSample = new Sample(this.currentSamples.size(), cellID, activityID, networks, activityFeature);
             this.currentSamples.add(newSample);
 
