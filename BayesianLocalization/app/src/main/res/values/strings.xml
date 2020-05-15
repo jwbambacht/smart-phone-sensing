@@ -34,6 +34,7 @@
     <string name="dialog_reset_title">Are u sure?</string>
     <string name="dialog_reset_message">Do you want to reset all data?</string>
     <string name="confirm_add_training_text">Training sample added!</string>
+    <string name="confirm_export_samples">Samples successfully exported!</string>
     <string name="error_add_training_text">An error occurred, please try again!</string>
     <string name="confirm_reset_training_text">Samples successfully removed!</string>
     <string name="confirm_save_settings_text">Settings successfully saved!</string>

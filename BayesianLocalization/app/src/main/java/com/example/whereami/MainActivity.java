@@ -1,6 +1,5 @@
 package com.example.whereami;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -8,7 +7,6 @@ import androidx.core.content.ContextCompat;
 import android.Manifest;
 import android.content.Context;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.wifi.WifiManager;
@@ -24,35 +22,45 @@ import android.widget.GridLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
     private WifiManager wifiManager;
-    private final int MY_PERMISSIONS_ACCESS_COARSE_LOCATION = 1;
     WifiReceiver receiverWifi;
-    SharedPreferences settingsSharedPreferences;
     SQLiteDatabase db;
     GridLayout leftGridLayout;
     float[] cellBeliefs;
+
+    String[] permissions = new String[]{
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+            Manifest.permission.ACCESS_WIFI_STATE,
+            Manifest.permission.CHANGE_WIFI_STATE,
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        checkPermissions();
+
         getSupportActionBar().setHomeAsUpIndicator(R.drawable.ic_whereami_icon_white);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         db = openOrCreateDatabase("database.db", MODE_PRIVATE, null);
+
+        Util.createDatabases(db);
 
         wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         if (!wifiManager.isWifiEnabled()) {
             Toast.makeText(getApplicationContext(), "Turning WiFi ON...", Toast.LENGTH_LONG).show();
             wifiManager.setWifiEnabled(true);
         }
-
-        settingsSharedPreferences = getApplicationContext().getSharedPreferences("SETTINGS", 0);
 
         Button training = (Button) findViewById(R.id.button_training);
         training.setOnClickListener(new View.OnClickListener() {
@@ -76,7 +84,7 @@ public class MainActivity extends AppCompatActivity {
                 HashMap<String, Integer> networks = new HashMap<String, Integer>();
 
                 if (ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                    ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, MY_PERMISSIONS_ACCESS_COARSE_LOCATION);
+                    ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, 1);
                 } else {
 
                     Toast.makeText(MainActivity.this,"Sensing...", Toast.LENGTH_SHORT).show();
@@ -162,7 +170,7 @@ public class MainActivity extends AppCompatActivity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 Toast.makeText(MainActivity.this, "Location turned off", Toast.LENGTH_SHORT).show();
-                ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, MY_PERMISSIONS_ACCESS_COARSE_LOCATION);
+                ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, 1);
             } else {
                 wifiManager.startScan();
             }
@@ -178,20 +186,29 @@ public class MainActivity extends AppCompatActivity {
         unregisterReceiver(receiverWifi);
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        switch (requestCode) {
-            case MY_PERMISSIONS_ACCESS_COARSE_LOCATION:
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    Toast.makeText(MainActivity.this, "permission granted", Toast.LENGTH_SHORT).show();
-                    wifiManager.startScan();
-                } else {
+    private boolean checkPermissions() {
+        int result;
+        List<String> listPermissionsNeeded = new ArrayList<>();
+        for (String p : permissions) {
+            result = ContextCompat.checkSelfPermission(this, p);
+            if (result != PackageManager.PERMISSION_GRANTED) {
+                listPermissionsNeeded.add(p);
+            }
+        }
+        if (!listPermissionsNeeded.isEmpty()) {
+            ActivityCompat.requestPermissions(this, listPermissionsNeeded.toArray(new String[listPermissionsNeeded.size()]), 100);
+            return false;
+        }
+        return true;
+    }
 
-                    Toast.makeText(MainActivity.this, "permission not granted", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                break;
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        if (requestCode == 100) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(MainActivity.this, "Permissions granted", Toast.LENGTH_SHORT).show();
+            }
+            return;
         }
     }
 }

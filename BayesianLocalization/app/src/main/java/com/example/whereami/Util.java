@@ -1,21 +1,19 @@
 package com.example.whereami;
 
 import android.content.ContentValues;
-import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
-import android.os.Handler;
+import android.os.Environment;
 import android.util.Log;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import java.util.ArrayList;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 public class Util  extends AppCompatActivity {
 
@@ -23,7 +21,6 @@ public class Util  extends AppCompatActivity {
     static void resetSamples(SQLiteDatabase database) {
         try {
             database.execSQL("DROP TABLE IF EXISTS networks");
-
             Util.createDatabases(database);
         }catch (Exception e) {
             throw new RuntimeException(e);
@@ -34,7 +31,62 @@ public class Util  extends AppCompatActivity {
         database.execSQL("CREATE TABLE IF NOT EXISTS networks (ID INTEGER PRIMARY KEY AUTOINCREMENT, BSSID VARCHAR(40), RSSI INTEGER, cellID INTEGER)");
     }
 
-    // Method that performs a network scan
+    static boolean exportSamples(SQLiteDatabase database) {
+
+        Util.createDatabases(database);
+
+        Cursor cursor = null;
+
+        try {
+            cursor = database.rawQuery("SELECT * FROM networks", null);
+            File sdCardDir = Environment.getExternalStorageDirectory();
+            String filename = "database_BAK.csv";
+
+            File saveFile = new File(sdCardDir, filename);
+            FileWriter fileWriter = new FileWriter(saveFile);
+
+            BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+            int rowCount = cursor.getCount();
+            int colCount = cursor.getColumnCount();
+
+            if(rowCount == 0) {
+                return false;
+            }
+
+            if (rowCount > 0) {
+                cursor.moveToFirst();
+                for (int i = 0; i < colCount; i++) {
+                    if (i != colCount - 1) {
+                        bufferedWriter.write(cursor.getColumnName(i) + ",");
+                    } else {
+                        bufferedWriter.write(cursor.getColumnName(i));
+                    }
+                }
+                bufferedWriter.newLine();
+
+                for (int i = 0; i < rowCount; i++) {
+                    cursor.moveToPosition(i);
+
+                    for (int j = 0; j < colCount; j++) {
+                        if (j != colCount - 1)
+                            bufferedWriter.write(cursor.getString(j) + ",");
+                        else
+                            bufferedWriter.write(cursor.getString(j));
+                    }
+                    bufferedWriter.newLine();
+                }
+                bufferedWriter.flush();
+            }
+        } catch (Exception ex) {
+            if (database.isOpen()) {
+                database.close();
+            }
+        }
+
+        return true;
+    }
+
+    // Method that performs a network scan and inserts them into the database
     static void findNetworks(WifiManager wifiManager, SQLiteDatabase database, int cellID) {
 
         wifiManager.startScan();
@@ -52,6 +104,7 @@ public class Util  extends AppCompatActivity {
         }
     }
 
+    // Method that determines the location by use of Bayes
     static float[] BayesianLocalization(HashMap<String, Integer> networks, float[] cellBeliefs) {
 
         return cellBeliefs;
