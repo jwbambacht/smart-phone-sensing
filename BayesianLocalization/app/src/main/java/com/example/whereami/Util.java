@@ -28,7 +28,7 @@ public class Util  extends AppCompatActivity {
     }
 
     static void createDatabases(SQLiteDatabase database) {
-        database.execSQL("CREATE TABLE IF NOT EXISTS networks (ID INTEGER PRIMARY KEY AUTOINCREMENT, BSSID VARCHAR(40), RSSI INTEGER, cellID INTEGER)");
+        database.execSQL("CREATE TABLE IF NOT EXISTS networks (ID INTEGER PRIMARY KEY AUTOINCREMENT, BSSID VARCHAR(40), SSID VARCHAR(40), RSSI INTEGER, cellID INTEGER)");
     }
 
     static boolean exportSamples(SQLiteDatabase database) {
@@ -95,6 +95,7 @@ public class Util  extends AppCompatActivity {
         for (ScanResult scan : wifiManager.getScanResults()) {
             ContentValues networkRow = new ContentValues();
             networkRow.put("BSSID", scan.BSSID);
+            networkRow.put("SSID", scan.SSID);
             networkRow.put("RSSI",scan.level);
             networkRow.put("cellID", cellID);
 
