@@ -32,7 +32,7 @@ public class MainActivity extends AppCompatActivity {
     WifiReceiver receiverWifi;
     SQLiteDatabase db;
     GridLayout leftGridLayout;
-    float[] cellBeliefs;
+    double[] cellBeliefs;
 
     String[] permissions = new String[]{
             Manifest.permission.ACCESS_COARSE_LOCATION,
@@ -53,7 +53,6 @@ public class MainActivity extends AppCompatActivity {
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         db = openOrCreateDatabase("database.db", MODE_PRIVATE, null);
-
         Util.createDatabases(db);
 
         wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
@@ -71,7 +70,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         String[] cells = this.getResources().getStringArray(R.array.cell_array);
-        cellBeliefs = new float[8];
+        cellBeliefs = new double[] { 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125};
 
         leftGridLayout = (GridLayout) findViewById(R.id.gridlayout_left_cells);
 
@@ -80,8 +79,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
 
-                // Use HashMap to find and update network easily and fast
-                HashMap<String, Integer> networks = new HashMap<String, Integer>();
+                List<Network> networks = new ArrayList<>();
 
                 if (ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                     ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, 1);
@@ -89,13 +87,18 @@ public class MainActivity extends AppCompatActivity {
 
                     Toast.makeText(MainActivity.this,"Sensing...", Toast.LENGTH_SHORT).show();
 
+                    int scanID = Util.getMaximumScanID(db);
+
+                    // Scan networks
+                    networks = Util.findNetworks(wifiManager,db,0, true, scanID++);
+
                     // Find and return networks
 //                    networks = Util.findNetworks(wifiManager);
 
                     // Apply the KNN algorithm in order to obtain the cell prediction
                     cellBeliefs = Util.BayesianLocalization(networks,cellBeliefs);
 
-                    createCellGrid(leftGridLayout, cells, cellBeliefs);
+//                    createCellGrid(leftGridLayout, cells, cellBeliefs);
                 }
             }
         });

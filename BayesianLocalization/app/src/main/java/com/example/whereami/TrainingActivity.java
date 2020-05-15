@@ -85,16 +85,18 @@ public class TrainingActivity extends AppCompatActivity {
             Thread thread = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    int nSamples = 3;
+                    int nSamples = 10;
                     int timeDifference = 9;
                     int delay = timeDifference*1000;
                     int scanned = 0;
+                    int scanID = Util.getMaximumScanID(db);
 
                     try {
                         while(scanned < nSamples) {
+                            scanID += 1;
                             Thread.sleep(delay);
                             Log.i("Scan ",""+scanned);
-                            Util.findNetworks(wifiManager,db,cellID);
+                            Util.findNetworks(wifiManager,db,cellID, false, scanID);
                             scanned++;
                         }
                         toast.show();

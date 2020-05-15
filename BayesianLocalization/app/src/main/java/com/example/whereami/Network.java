@@ -1,6 +1,6 @@
 package com.example.whereami;
 
-public class Network {
+public class Network  implements Comparable<Network> {
 
     String BSSID;
     int RSSI;
@@ -14,4 +14,8 @@ public class Network {
         return this.BSSID;
     }
 
+    @Override
+    public int compareTo(Network o) {
+        return this.RSSI-o.RSSI;
+    }
 }

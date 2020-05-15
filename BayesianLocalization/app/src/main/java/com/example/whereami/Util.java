@@ -13,11 +13,19 @@ import androidx.appcompat.app.AppCompatActivity;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 public class Util  extends AppCompatActivity {
 
-    // Method that removes all saved samples
+    // Create Database
+    static void createDatabases(SQLiteDatabase database) {
+        database.execSQL("CREATE TABLE IF NOT EXISTS networks (ID INTEGER PRIMARY KEY AUTOINCREMENT, BSSID VARCHAR(40), SSID VARCHAR(40), RSSI INTEGER, cellID INTEGER, type VARCHAR(10), scanID INTEGER)");
+    }
+
+    // Method that removes all saved samples and initiates re-creation of database
     static void resetSamples(SQLiteDatabase database) {
         try {
             database.execSQL("DROP TABLE IF EXISTS networks");
@@ -27,10 +35,28 @@ public class Util  extends AppCompatActivity {
         }
     }
 
-    static void createDatabases(SQLiteDatabase database) {
-        database.execSQL("CREATE TABLE IF NOT EXISTS networks (ID INTEGER PRIMARY KEY AUTOINCREMENT, BSSID VARCHAR(40), SSID VARCHAR(40), RSSI INTEGER, cellID INTEGER)");
+    static int getMaximumScanID(SQLiteDatabase database) {
+        int maxID = -1;
+        Cursor cursor = null;
+
+        try {
+            cursor = database.rawQuery("SELECT MAX(scanID) from networks",null);
+
+            if(cursor.getCount() == 0) {
+                return maxID;
+            }
+
+            cursor.moveToFirst();
+            maxID = cursor.getInt(0);
+            cursor.close();
+        }catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return maxID;
     }
 
+    // Method that converts the samples in the SQLLite database to a CSV file and writes it to the phone storage
     static boolean exportSamples(SQLiteDatabase database) {
 
         Util.createDatabases(database);
@@ -53,41 +79,38 @@ public class Util  extends AppCompatActivity {
                 return false;
             }
 
-            if (rowCount > 0) {
-                cursor.moveToFirst();
-                for (int i = 0; i < colCount; i++) {
-                    if (i != colCount - 1) {
-                        bufferedWriter.write(cursor.getColumnName(i) + ",");
+            cursor.moveToFirst();
+            for (int i = 0; i < colCount; i++) {
+                if (i != colCount - 1) {
+                    bufferedWriter.write(cursor.getColumnName(i) + ",");
+                } else {
+                    bufferedWriter.write(cursor.getColumnName(i));
+                }
+            }
+            bufferedWriter.newLine();
+
+            for (int i = 0; i < rowCount; i++) {
+                cursor.moveToPosition(i);
+                for (int j = 0; j < colCount; j++) {
+                    if (j != colCount - 1) {
+                        bufferedWriter.write(cursor.getString(j) + ",");
                     } else {
-                        bufferedWriter.write(cursor.getColumnName(i));
+                        bufferedWriter.write(cursor.getString(j));
                     }
                 }
                 bufferedWriter.newLine();
-
-                for (int i = 0; i < rowCount; i++) {
-                    cursor.moveToPosition(i);
-
-                    for (int j = 0; j < colCount; j++) {
-                        if (j != colCount - 1)
-                            bufferedWriter.write(cursor.getString(j) + ",");
-                        else
-                            bufferedWriter.write(cursor.getString(j));
-                    }
-                    bufferedWriter.newLine();
-                }
-                bufferedWriter.flush();
             }
+            bufferedWriter.flush();
         } catch (Exception ex) {
-            if (database.isOpen()) {
-                database.close();
-            }
+            ex.printStackTrace();
         }
-
         return true;
     }
 
     // Method that performs a network scan and inserts them into the database
-    static void findNetworks(WifiManager wifiManager, SQLiteDatabase database, int cellID) {
+    static List<Network> findNetworks(WifiManager wifiManager, SQLiteDatabase database, int cellID, boolean testing, int scanID) {
+
+        List<Network> networks = new ArrayList<>();
 
         wifiManager.startScan();
 
@@ -96,17 +119,36 @@ public class Util  extends AppCompatActivity {
             ContentValues networkRow = new ContentValues();
             networkRow.put("BSSID", scan.BSSID);
             networkRow.put("SSID", scan.SSID);
-            networkRow.put("RSSI",scan.level);
+            networkRow.put("RSSI", scan.level);
             networkRow.put("cellID", cellID);
+            networkRow.put("scanID", scanID);
+
+            if(testing) {
+                networkRow.put("type", "testing");
+                networks.add(new Network(scan.BSSID, scan.level));
+            }else{
+                networkRow.put("type", "training");
+            }
 
             database.insert("networks", null, networkRow);
-
-            Log.i("Network",scan.BSSID + "-"+scan.level);
         }
+
+        return networks;
     }
 
     // Method that determines the location by use of Bayes
-    static float[] BayesianLocalization(HashMap<String, Integer> networks, float[] cellBeliefs) {
+    static double[] BayesianLocalization(List<Network> networks, double[] cellBeliefs) {
+
+        Log.i("Cell Beliefs Before", Arrays.toString(cellBeliefs));
+
+        // Sort APs in decreasing order based on RSSI value
+        Collections.sort(networks);
+
+
+
+
+
+        Log.i("Cell Beliefs After", Arrays.toString(cellBeliefs));
 
         return cellBeliefs;
     };
