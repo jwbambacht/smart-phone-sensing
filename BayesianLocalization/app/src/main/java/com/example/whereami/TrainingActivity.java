@@ -5,14 +5,20 @@ import android.content.Context;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Color;
+import android.graphics.Typeface;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
+import android.widget.TableLayout;
+import android.widget.TableRow;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -28,6 +34,8 @@ public class TrainingActivity extends AppCompatActivity {
     // Storage helpers
     SQLiteDatabase db;
 
+    // UI Elements
+    TableLayout tableSamples;
     Button trainButton;
 
     @Override
@@ -38,6 +46,10 @@ public class TrainingActivity extends AppCompatActivity {
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         db = openOrCreateDatabase("database.db", MODE_PRIVATE, null);
+
+        this.tableSamples = (TableLayout) findViewById(R.id.table_samples);
+        this.tableSamples.setStretchAllColumns(true);
+        this.loadTableData(this.tableSamples);
 
         wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         if (!wifiManager.isWifiEnabled()) {
@@ -70,6 +82,63 @@ public class TrainingActivity extends AppCompatActivity {
         return true;
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        this.loadTableData(this.tableSamples);
+    }
+
+    // Method that loads the data of the table, removes current data and inserts new data
+    public void loadTableData(TableLayout table) {
+
+        table.removeAllViews();
+
+        int[] cellCount = new int[8];
+        int totalCount = 0;
+
+        for(int i = 0; i < cellCount.length; i++) {
+            int count = Util.getTrainingCount(db,i);
+            cellCount[i] = count;
+            totalCount += count;
+        }
+
+        String[] allCells = getResources().getStringArray(R.array.cell_array);
+
+        for(int i = 0; i < 9; i++) {
+            String nameCell,sampleCell;
+            int fontSize = 14;
+            if(i < 8) {
+                nameCell = allCells[i];
+                sampleCell = cellCount[i] + " scans";
+            }else{
+                nameCell = getResources().getString(R.string.textview_label_total_samples);
+                sampleCell = totalCount+" scans";
+                fontSize = 16;
+            }
+
+            TableRow tableRow = new TableRow(this);
+            tableRow.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.WRAP_CONTENT, TableRow.LayoutParams.WRAP_CONTENT));
+
+            TextView textViewLeft = new TextView(this);
+            textViewLeft.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_START);
+            textViewLeft.setText(nameCell);
+            textViewLeft.setTextColor(Color.WHITE);
+            textViewLeft.setTextSize(TypedValue.COMPLEX_UNIT_SP,fontSize);
+            tableRow.addView(textViewLeft);
+            textViewLeft.setHeight(50);
+            textViewLeft.setTypeface(Typeface.DEFAULT_BOLD);
+
+            TextView textViewRight = new TextView(this);
+            textViewRight.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_END);
+            textViewRight.setText(sampleCell);
+            textViewRight.setTextColor(Color.WHITE);
+            textViewRight.setTextSize(TypedValue.COMPLEX_UNIT_SP,fontSize);
+
+            tableRow.addView(textViewRight);
+            table.addView(tableRow, new TableLayout.LayoutParams(TableRow.LayoutParams.WRAP_CONTENT, TableRow.LayoutParams.WRAP_CONTENT));
+        }
+    }
+
     public void addToTraining(int cellID) throws InterruptedException {
 
         if (ActivityCompat.checkSelfPermission(TrainingActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -85,14 +154,14 @@ public class TrainingActivity extends AppCompatActivity {
             Thread thread = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    int nSamples = 10;
-                    int timeDifference = 9;
+                    int nScans = 30;
+                    int timeDifference = 10;
                     int delay = timeDifference*1000;
                     int scanned = 0;
                     int scanID = Util.getMaximumScanID(db);
 
                     try {
-                        while(scanned < nSamples) {
+                        while(scanned < nScans) {
                             scanID += 1;
                             Thread.sleep(delay);
                             Log.i("Scan ",""+scanned);

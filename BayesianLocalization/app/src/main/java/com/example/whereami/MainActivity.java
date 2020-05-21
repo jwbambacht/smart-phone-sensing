@@ -9,10 +9,12 @@ import android.content.Context;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.content.Intent;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -87,16 +89,30 @@ public class MainActivity extends AppCompatActivity {
 
                     Toast.makeText(MainActivity.this,"Sensing...", Toast.LENGTH_SHORT).show();
 
-                    int scanID = Util.getMaximumScanID(db);
+                    try {
+                        Thread.sleep(10000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    wifiManager.startScan();
+
+                    Log.i("Test scan","");
+                    for(ScanResult scanResult : wifiManager.getScanResults()) {
+                        Log.i(scanResult.BSSID,""+scanResult.level);
+                    }
+
+//                    int scanID = Util.getMaximumScanID(db);
+
+
 
                     // Scan networks
-                    networks = Util.findNetworks(wifiManager,db,0, true, scanID++);
+//                    networks = Util.findNetworks(wifiManager,db,0, true, scanID++);
 
                     // Find and return networks
 //                    networks = Util.findNetworks(wifiManager);
 
                     // Apply the KNN algorithm in order to obtain the cell prediction
-                    cellBeliefs = Util.BayesianLocalization(networks,cellBeliefs);
+//                    cellBeliefs = Util.BayesianLocalization(networks,cellBeliefs);
 
 //                    createCellGrid(leftGridLayout, cells, cellBeliefs);
                 }

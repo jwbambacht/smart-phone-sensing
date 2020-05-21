@@ -29,7 +29,7 @@
         <item>Cell H</item>
     </string-array>
 
-    <string name="textview_label_total_samples">Total training samples</string>
+    <string name="textview_label_total_samples">Total training scans</string>
 
     <string name="dialog_reset_title">Are u sure?</string>
     <string name="dialog_reset_message">Do you want to reset all data?</string>

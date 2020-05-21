@@ -107,6 +107,26 @@ public class Util  extends AppCompatActivity {
         return true;
     }
 
+    // Method that finds the number of samples per cell in the database
+    static int getTrainingCount(SQLiteDatabase database, int cellID) {
+        int count = 0;
+        Cursor cursor = null;
+
+        try {
+            String[] args = {""+cellID};
+            cursor = database.rawQuery("SELECT * from networks WHERE cellID = ? AND type = 'training' GROUP BY scanID",args);
+
+            count = cursor.getCount();
+
+            cursor.close();
+        }catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return count;
+
+    }
+
     // Method that performs a network scan and inserts them into the database
     static List<Network> findNetworks(WifiManager wifiManager, SQLiteDatabase database, int cellID, boolean testing, int scanID) {
 
