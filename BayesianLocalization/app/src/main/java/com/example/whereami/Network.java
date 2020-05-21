@@ -1,21 +1,40 @@
 package com.example.whereami;
 
-public class Network  implements Comparable<Network> {
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+
+public class Network {
 
     String BSSID;
-    int RSSI;
+    List<BigDecimal[]> cells = new ArrayList<>();
 
-    public Network(String BSSID, int RSSI) {
+    public Network(String BSSID) {
         this.BSSID = BSSID;
-        this.RSSI = RSSI;
+        this.cells.add(new BigDecimal[100]);
+        this.cells.add(new BigDecimal[100]);
+        this.cells.add(new BigDecimal[100]);
+        this.cells.add(new BigDecimal[100]);
+        this.cells.add(new BigDecimal[100]);
+        this.cells.add(new BigDecimal[100]);
+        this.cells.add(new BigDecimal[100]);
+        this.cells.add(new BigDecimal[100]);
     }
 
     public String getBSSID() {
         return this.BSSID;
     }
 
-    @Override
-    public int compareTo(Network o) {
-        return this.RSSI-o.RSSI;
+    public BigDecimal[] getProbabilitiesForRSSI(int RSSI) {
+        BigDecimal[] values = new BigDecimal[8];
+        for(BigDecimal[] cell : this.cells) {
+            int index = this.cells.indexOf(cell);
+            values[index] = cell[RSSI];
+        }
+        return values;
+    }
+
+    public void setCellProbabilities(int cellID, BigDecimal[] values) {
+        this.cells.set(cellID,values);
     }
 }

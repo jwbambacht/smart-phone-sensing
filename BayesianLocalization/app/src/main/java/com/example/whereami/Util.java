@@ -1,6 +1,7 @@
 package com.example.whereami;
 
 import android.content.ContentValues;
+import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.wifi.ScanResult;
@@ -10,12 +11,19 @@ import android.util.Log;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.math.BigDecimal;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 
 public class Util  extends AppCompatActivity {
@@ -107,6 +115,50 @@ public class Util  extends AppCompatActivity {
         return true;
     }
 
+    static HashMap<String,Network> readData(Context context) {
+        InputStream input = context.getResources().openRawResource(R.raw.data_to_phone);
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(input, Charset.forName("UTF-8")));
+        String line = "";
+
+        HashMap<String, Network> networks = new HashMap<String,Network>();
+
+        try {
+            while ((line = reader.readLine()) != null) {
+                // Split the line into different tokens (using the comma as a separator).
+                String[] tokens = line.split(",");
+
+                Network network;
+
+                String BSSID = tokens[0];
+                int cellID = Integer.parseInt(tokens[1]);
+                BigDecimal[] probabilities = new BigDecimal[100];
+
+                for(int i = 0; i < 100; i++) {
+                    probabilities[i] = new BigDecimal(tokens[i+2]);
+                }
+
+                if(cellID == 0) {
+                    network = new Network(BSSID);
+                }else{
+                    network = networks.get(BSSID);
+                }
+
+                network.setCellProbabilities(cellID,probabilities);
+
+                networks.put(BSSID,network);
+
+                Log.i("Added "+BSSID+" to list, cell "+cellID,"");
+                Log.i("Probabilities",Arrays.toString(probabilities));
+            }
+        } catch (IOException e1) {
+            Log.e("Error reading csv", "Error" + line, e1);
+            e1.printStackTrace();
+        }
+
+        return networks;
+    }
+
     // Method that finds the number of samples per cell in the database
     static int getTrainingCount(SQLiteDatabase database, int cellID) {
         int count = 0;
@@ -128,9 +180,7 @@ public class Util  extends AppCompatActivity {
     }
 
     // Method that performs a network scan and inserts them into the database
-    static List<Network> findNetworks(WifiManager wifiManager, SQLiteDatabase database, int cellID, boolean testing, int scanID) {
-
-        List<Network> networks = new ArrayList<>();
+    static void findNetworks(WifiManager wifiManager, SQLiteDatabase database, int cellID, boolean testing, int scanID) {
 
         wifiManager.startScan();
 
@@ -145,15 +195,12 @@ public class Util  extends AppCompatActivity {
 
             if(testing) {
                 networkRow.put("type", "testing");
-                networks.add(new Network(scan.BSSID, scan.level));
             }else{
                 networkRow.put("type", "training");
             }
 
             database.insert("networks", null, networkRow);
         }
-
-        return networks;
     }
 
     // Method that determines the location by use of Bayes
@@ -162,7 +209,7 @@ public class Util  extends AppCompatActivity {
         Log.i("Cell Beliefs Before", Arrays.toString(cellBeliefs));
 
         // Sort APs in decreasing order based on RSSI value
-        Collections.sort(networks);
+//        Collections.sort(networks);
 
 
 

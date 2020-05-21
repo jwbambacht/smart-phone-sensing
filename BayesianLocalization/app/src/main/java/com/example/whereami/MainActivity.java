@@ -24,9 +24,16 @@ import android.widget.GridLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import javax.xml.transform.Result;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -35,6 +42,7 @@ public class MainActivity extends AppCompatActivity {
     SQLiteDatabase db;
     GridLayout leftGridLayout;
     double[] cellBeliefs;
+    HashMap<String,Network> networks;
 
     String[] permissions = new String[]{
             Manifest.permission.ACCESS_COARSE_LOCATION,
@@ -63,6 +71,8 @@ public class MainActivity extends AppCompatActivity {
             wifiManager.setWifiEnabled(true);
         }
 
+        networks = Util.readData(this);
+
         Button training = (Button) findViewById(R.id.button_training);
         training.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -81,35 +91,69 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
 
-                List<Network> networks = new ArrayList<>();
-
                 if (ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                     ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, 1);
                 } else {
 
                     Toast.makeText(MainActivity.this,"Sensing...", Toast.LENGTH_SHORT).show();
 
-                    try {
-                        Thread.sleep(10000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+                    List<ResultScan> resultScans = new ArrayList<>();
                     wifiManager.startScan();
 
-                    Log.i("Test scan","");
+                    // Leave out networks that are not in the training results (not captured or cleaned out for some reason)
                     for(ScanResult scanResult : wifiManager.getScanResults()) {
-                        Log.i(scanResult.BSSID,""+scanResult.level);
+                        if(networks.containsKey(scanResult.BSSID)) {
+                            resultScans.add(new ResultScan(scanResult.BSSID,Math.abs(scanResult.level)));
+                        }
                     }
+
+                    Collections.sort(resultScans);
+
+                    for(ResultScan res : resultScans) {
+                        Log.i(res.getBSSID(),res.getRSSI()+"");
+                    }
+
+                    BigDecimal[] prior = new BigDecimal[8];
+                    Arrays.fill(prior, new BigDecimal(0.125));
+
+                    BigDecimal[] posterior = new BigDecimal[8];
+
+                    for(int i = 0; i < 3; i++) {
+                        Log.i("End Vector "+ i,"");
+                        for(BigDecimal pri : prior) {
+                            Log.i("",""+pri.doubleValue());
+                        }
+
+                        ResultScan result = resultScans.get(i);
+                        String BSSID = result.getBSSID();
+                        int RSSI = result.getRSSI();
+                        BigDecimal norm_sum = new BigDecimal(0);
+
+                        BigDecimal[] probs = networks.get(BSSID).getProbabilitiesForRSSI(RSSI);
+
+                        for(int j = 0; j < 8; j++) {
+                            Log.i("Prob "+j,probs[j]+"");
+                            posterior[j] = prior[j].multiply(probs[j]);
+                            norm_sum = norm_sum.add(posterior[j]);
+                        }
+
+                        // Normalize posterior
+                        for(int j = 0; j < 8; j++) {
+                            posterior[j] = posterior[j].divide(norm_sum, 300, RoundingMode.CEILING);
+                        }
+
+                        Log.i("End Vector "+ i,"");
+                        for(BigDecimal post : posterior) {
+                            Log.i("",""+post.doubleValue());
+                        }
+
+                        prior = posterior;
+
+                    }
+
 
 //                    int scanID = Util.getMaximumScanID(db);
 
-
-
-                    // Scan networks
-//                    networks = Util.findNetworks(wifiManager,db,0, true, scanID++);
-
-                    // Find and return networks
-//                    networks = Util.findNetworks(wifiManager);
 
                     // Apply the KNN algorithm in order to obtain the cell prediction
 //                    cellBeliefs = Util.BayesianLocalization(networks,cellBeliefs);
