@@ -9,7 +9,6 @@ import android.content.Context;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.database.sqlite.SQLiteDatabase;
-import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -25,15 +24,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
-import javax.xml.transform.Result;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -41,8 +35,11 @@ public class MainActivity extends AppCompatActivity {
     WifiReceiver receiverWifi;
     SQLiteDatabase db;
     GridLayout leftGridLayout;
-    double[] cellBeliefs;
     HashMap<String,Network> networks;
+    BigDecimal[] prior, posterior;
+    boolean sensingFinished;
+    TextView senseLabel;
+    Button sense;
 
     String[] permissions = new String[]{
             Manifest.permission.ACCESS_COARSE_LOCATION,
@@ -57,10 +54,10 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        checkPermissions();
-
         getSupportActionBar().setHomeAsUpIndicator(R.drawable.ic_whereami_icon_white);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+
+        checkPermissions();
 
         db = openOrCreateDatabase("database.db", MODE_PRIVATE, null);
         Util.createDatabases(db);
@@ -72,6 +69,11 @@ public class MainActivity extends AppCompatActivity {
         }
 
         networks = Util.readData(this);
+        senseLabel = (TextView) findViewById(R.id.textview_label_sense);
+        leftGridLayout = (GridLayout) findViewById(R.id.gridlayout_left_cells);
+        String[] cells = this.getResources().getStringArray(R.array.cell_array);
+
+        resetSensing();
 
         Button training = (Button) findViewById(R.id.button_training);
         training.setOnClickListener(new View.OnClickListener() {
@@ -81,93 +83,56 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        String[] cells = this.getResources().getStringArray(R.array.cell_array);
-        cellBeliefs = new double[] { 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125};
-
-        leftGridLayout = (GridLayout) findViewById(R.id.gridlayout_left_cells);
-
-        Button sense = (Button) findViewById(R.id.button_sense);
+        sense = (Button) findViewById(R.id.button_sense);
         sense.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
 
-                if (ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                    ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, 1);
-                } else {
+                if(sensingFinished) {
+                    leftGridLayout.removeAllViews();
+                    resetSensing();
+                    sense.setText(getResources().getString(R.string.button_sense_title));
+                }else {
+                    if (ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                        ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, 1);
+                    } else {
 
-                    Toast.makeText(MainActivity.this,"Sensing...", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(MainActivity.this, "Sensing...", Toast.LENGTH_SHORT).show();
 
-                    List<ResultScan> resultScans = new ArrayList<>();
-                    wifiManager.startScan();
+                        posterior = Util.BayesianLocalization(prior, wifiManager, networks);
 
-                    // Leave out networks that are not in the training results (not captured or cleaned out for some reason)
-                    for(ScanResult scanResult : wifiManager.getScanResults()) {
-                        if(networks.containsKey(scanResult.BSSID)) {
-                            resultScans.add(new ResultScan(scanResult.BSSID,Math.abs(scanResult.level)));
-                        }
-                    }
-
-                    Collections.sort(resultScans);
-
-                    for(ResultScan res : resultScans) {
-                        Log.i(res.getBSSID(),res.getRSSI()+"");
-                    }
-
-                    BigDecimal[] prior = new BigDecimal[8];
-                    Arrays.fill(prior, new BigDecimal(0.125));
-
-                    BigDecimal[] posterior = new BigDecimal[8];
-
-                    for(int i = 0; i < 3; i++) {
-                        Log.i("End Vector "+ i,"");
-                        for(BigDecimal pri : prior) {
-                            Log.i("",""+pri.doubleValue());
+                        // When user chooses to sense networks the posterior is used to see if a cell has a high localization probability
+                        // If this is the case
+                        if (posterior[Util.findMaxBigDecimal(posterior)].compareTo(new BigDecimal(0.95)) >= 0) {
+                            Arrays.fill(prior, new BigDecimal(0.125));
+                            senseLabel.setText(getResources().getString(R.string.textview_sense_results));
+                            sense.setText(getResources().getString(R.string.button_sense_reset));
+                            sensingFinished = true;
+                        } else {
+                            senseLabel.setText(getResources().getString(R.string.textview_sense_again));
+                            prior = posterior;
                         }
 
-                        ResultScan result = resultScans.get(i);
-                        String BSSID = result.getBSSID();
-                        int RSSI = result.getRSSI();
-                        BigDecimal norm_sum = new BigDecimal(0);
-
-                        BigDecimal[] probs = networks.get(BSSID).getProbabilitiesForRSSI(RSSI);
-
-                        for(int j = 0; j < 8; j++) {
-                            Log.i("Prob "+j,probs[j]+"");
-                            posterior[j] = prior[j].multiply(probs[j]);
-                            norm_sum = norm_sum.add(posterior[j]);
-                        }
-
-                        // Normalize posterior
-                        for(int j = 0; j < 8; j++) {
-                            posterior[j] = posterior[j].divide(norm_sum, 300, RoundingMode.CEILING);
-                        }
-
-                        Log.i("End Vector "+ i,"");
-                        for(BigDecimal post : posterior) {
-                            Log.i("",""+post.doubleValue());
-                        }
-
-                        prior = posterior;
+                        createCellGrid(leftGridLayout, cells, posterior);
 
                     }
-
-
-//                    int scanID = Util.getMaximumScanID(db);
-
-
-                    // Apply the KNN algorithm in order to obtain the cell prediction
-//                    cellBeliefs = Util.BayesianLocalization(networks,cellBeliefs);
-
-//                    createCellGrid(leftGridLayout, cells, cellBeliefs);
                 }
             }
         });
     }
 
-    public void createCellGrid(GridLayout gridLayout, String[] cellNames, float[] results) {
+    public void createCellGrid(GridLayout gridLayout, String[] cellNames, BigDecimal[] results) {
         gridLayout.removeAllViews();
 
-        int idx = Util.findMaxValue(results);
+        float [] results_formatted = new float[8];
+
+        for(int i = 0; i < results.length; i++) {
+            results_formatted[i] = results[i].setScale(4,BigDecimal.ROUND_HALF_UP).floatValue();
+        }
+
+        Log.i("RESULTS:",Arrays.toString(results_formatted));
+
+        int idx = Util.findMaxValue(results_formatted);
 
         for(int i = 0; i < 8; i++) {
             TextView textView = new TextView(this);
@@ -180,8 +145,8 @@ public class MainActivity extends AppCompatActivity {
                 textView.setBackgroundResource(R.drawable.cell_closed);
             }
             textView.setGravity(Gravity.CENTER_VERTICAL);
-            textView.setHeight(70);
-            textView.setText(cellNames[i]);
+            textView.setHeight(60);
+            textView.setText(cellNames[i] + " - " + String.format("%.4f", results_formatted[i]));
             textView.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
 
             gridLayout.addView(textView);
@@ -217,6 +182,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         leftGridLayout.removeAllViews();
+        resetSensing();
     }
 
     @Override
@@ -228,6 +194,13 @@ public class MainActivity extends AppCompatActivity {
         registerReceiver(receiverWifi, intentFilter);
         getWifi();
     }
+
+     void resetSensing() {
+        prior = new BigDecimal[8];
+        Arrays.fill(prior, new BigDecimal(0.125));
+        sensingFinished = false;
+         senseLabel.setText(getResources().getString(R.string.textview_sense_to_see));
+     }
 
     private void getWifi() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {

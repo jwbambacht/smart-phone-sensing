@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -204,21 +205,83 @@ public class Util  extends AppCompatActivity {
     }
 
     // Method that determines the location by use of Bayes
-    static double[] BayesianLocalization(List<Network> networks, double[] cellBeliefs) {
+    static BigDecimal[] BayesianLocalization(BigDecimal[] prior, WifiManager wifiManager, HashMap<String,Network> networks) {
 
-        Log.i("Cell Beliefs Before", Arrays.toString(cellBeliefs));
+        wifiManager.startScan();
 
-        // Sort APs in decreasing order based on RSSI value
-//        Collections.sort(networks);
+        // Include scanned APs only if the BSSID is also in the list of processed networks
+        // Use the absolute value for RSSI to be able to simply take the RSSI value as index
+        List<ResultScan> resultScans = new ArrayList<>();
+        for(ScanResult scanResult : wifiManager.getScanResults()) {
+            if(networks.containsKey(scanResult.BSSID)) {
+                resultScans.add(new ResultScan(scanResult.BSSID,Math.abs(scanResult.level)));
+            }
+        }
 
+        // Sort scanned APs on best (lowest) positive RSSI
+        Collections.sort(resultScans);
 
+        // Show list of included sensed networks for offline processing and bug solving
+        for(ResultScan res : resultScans) {
+            Log.i(res.getBSSID(),res.getRSSI()+"");
+        }
 
+        // Create posterior
+        BigDecimal[] posterior = new BigDecimal[8];
 
+        // Prior
+        Log.i("Prior ","");
+        for(BigDecimal pri : prior) {
+            Log.i("",""+pri.doubleValue());
+        }
 
-        Log.i("Cell Beliefs After", Arrays.toString(cellBeliefs));
+        // For each sense scan only include the APs that have an RSSI of 60 or lower
+        int index = 0;
+        while(resultScans.get(index).getRSSI() <= 60 && index < resultScans.size()-1) {
+            ResultScan result = resultScans.get(index);
+            String BSSID = result.getBSSID();
+            int RSSI = result.getRSSI();
+            BigDecimal norm_sum = new BigDecimal(0);
 
-        return cellBeliefs;
+            BigDecimal[] probs = networks.get(BSSID).getProbabilitiesForRSSI(RSSI);
+
+            for(int j = 0; j < 8; j++) {
+//                Log.i("Prob "+j,probs[j]+"");
+                posterior[j] = prior[j].multiply(probs[j]);
+                norm_sum = norm_sum.add(posterior[j]);
+            }
+
+            // Normalize posterior
+            for(int j = 0; j < 8; j++) {
+                posterior[j] = posterior[j].divide(norm_sum, 300, RoundingMode.CEILING);
+            }
+
+            Log.i("Posterior "+ index,"");
+            for(BigDecimal post : posterior) {
+                Log.i("",""+post.doubleValue());
+            }
+
+            prior = posterior;
+            index++;
+        }
+
+        return posterior;
     };
+
+    // Method to find index of maximum value in BigDecimal array
+    static int findMaxBigDecimal(BigDecimal[] results) {
+        int index = 0;
+        BigDecimal max = results[0];
+
+        for(int i = 1; i < results.length; i++) {
+            if(results[i].compareTo(max) > 0) {
+                max = results[i];
+                index = i;
+            }
+        }
+
+        return index;
+    }
 
     // Method to find index of maximum value in float array
     static int findMaxValue(float[] results) {
