@@ -3,6 +3,7 @@
     <string name="title_main_activity">BayesianLocalization</string>
     <string name="button_training_title">TRAIN</string>
     <string name="button_sense_title">SENSE</string>
+    <string name="button_sense_reset">RESET SENSE RESULTS</string>
     <string name="button_export_samples">EXPORT SAMPLES TO SD CARD</string>
     <string name="button_reset_title">RESET SAMPLES</string>
     <string name="button_save_title">SAVE</string>
@@ -14,7 +15,8 @@
 
     <string name="textview_sense_title">Current Location</string>
     <string name="textview_sense_to_see">Sense to detect location!</string>
-    <string name="textview_sense_results">Results</string>
+    <string name="textview_sense_results">Localization results:</string>
+    <string name="textview_sense_again">Sense again to improve localization</string>
     <string name="textview_label_warning_change">* Changing will cause the training samples to be removed</string>
     <string name="textview_stats">Training Stats</string>
 
