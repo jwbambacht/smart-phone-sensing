@@ -99,6 +99,10 @@ public class MainActivity extends AppCompatActivity {
 
                         Toast.makeText(MainActivity.this, "Sensing...", Toast.LENGTH_SHORT).show();
 
+                        if(sensingFinished) {
+                            resetSensing();
+                        }
+
                         posterior = Util.BayesianLocalization(prior, wifiManager, networks);
 
                         // When user chooses to sense networks the posterior is used to see if a cell has a high localization probability
@@ -199,7 +203,7 @@ public class MainActivity extends AppCompatActivity {
         prior = new BigDecimal[8];
         Arrays.fill(prior, new BigDecimal(0.125));
         sensingFinished = false;
-         senseLabel.setText(getResources().getString(R.string.textview_sense_to_see));
+        senseLabel.setText(getResources().getString(R.string.textview_sense_to_see));
      }
 
     private void getWifi() {
