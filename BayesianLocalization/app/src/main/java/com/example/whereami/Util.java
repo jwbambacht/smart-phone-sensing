@@ -44,6 +44,7 @@ public class Util  extends AppCompatActivity {
         }
     }
 
+    // Method that gets the maximum scanID from the networks table
     static int getMaximumScanID(SQLiteDatabase database) {
         int maxID = -1;
         Cursor cursor = null;
@@ -116,6 +117,7 @@ public class Util  extends AppCompatActivity {
         return true;
     }
 
+    // Method that imports the processed data
     static HashMap<String,Network> readData(Context context) {
         InputStream input = context.getResources().openRawResource(R.raw.data_to_phone);
 
@@ -221,23 +223,12 @@ public class Util  extends AppCompatActivity {
         // Sort scanned APs on best (lowest) positive RSSI
         Collections.sort(resultScans);
 
-        // Show list of included sensed networks for offline processing and bug solving
-        for(ResultScan res : resultScans) {
-            Log.i(res.getBSSID(),res.getRSSI()+"");
-        }
-
         // Create posterior
         BigDecimal[] posterior = new BigDecimal[8];
 
-        // Prior
-        Log.i("Prior ","");
-        for(BigDecimal pri : prior) {
-            Log.i("",""+pri.doubleValue());
-        }
-
-        // For each sense scan only include the APs that have an RSSI of 60 or lower
+        // For each sense scan only include the APs that have an RSSI of 75 or lower
         int index = 0;
-        while(resultScans.get(index).getRSSI() <= 60 && index < resultScans.size()-1) {
+        while(resultScans.get(index).getRSSI() <= 75 && index < resultScans.size()-1 && index < 4) {
             ResultScan result = resultScans.get(index);
             String BSSID = result.getBSSID();
             int RSSI = result.getRSSI();
@@ -245,20 +236,13 @@ public class Util  extends AppCompatActivity {
 
             BigDecimal[] probs = networks.get(BSSID).getProbabilitiesForRSSI(RSSI);
 
+            // Normalize posterior
             for(int j = 0; j < 8; j++) {
-//                Log.i("Prob "+j,probs[j]+"");
                 posterior[j] = prior[j].multiply(probs[j]);
                 norm_sum = norm_sum.add(posterior[j]);
             }
-
-            // Normalize posterior
             for(int j = 0; j < 8; j++) {
                 posterior[j] = posterior[j].divide(norm_sum, 300, RoundingMode.CEILING);
-            }
-
-            Log.i("Posterior "+ index,"");
-            for(BigDecimal post : posterior) {
-                Log.i("",""+post.doubleValue());
             }
 
             prior = posterior;
