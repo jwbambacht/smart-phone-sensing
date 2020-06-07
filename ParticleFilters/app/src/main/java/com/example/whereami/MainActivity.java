@@ -349,8 +349,13 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
             }
 
             textview_particle_count.setText("Particles:\n"+particles.size());
+
         }
+
+        canvasView.invalidate(); //redraw canvas
+
     }
+
 
     // Method that prepares the canvas with particles and layout
     public void prepareCanvas() {
