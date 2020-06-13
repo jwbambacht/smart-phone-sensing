@@ -5,18 +5,16 @@ import androidx.core.content.ContextCompat;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.util.Log;
 import android.view.View.OnClickListener;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.drawable.ShapeDrawable;
-import android.graphics.drawable.shapes.OvalShape;
 import android.graphics.drawable.shapes.RectShape;
 import android.os.Bundle;
 import android.content.Intent;
-import android.util.Log;
 import android.view.Display;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -25,8 +23,6 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 
 import android.hardware.Sensor;
@@ -44,7 +40,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
     // Canvas and shapes
     private Canvas canvas;
-    private List<ShapeDrawable> particles;
+    private List<Particle> particles;
     private List<ShapeDrawable> walls;
 
     private SharedPreferences settingsSharedPreferences;
@@ -57,6 +53,8 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
     private int stepSizeMultiplier;
     private int nParticles;
     private int numSteps;
+
+    int test;
 
     // Variables for orientation and filtering
     private boolean startFiltering;
@@ -86,6 +84,9 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
         // Obtain settings from shared preferences and display size
         getSettings();
+
+
+        test = 0;
 
         // Set variables
         stepSize = 5;
@@ -267,6 +268,30 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                 startFiltering = true;
                 toggleButtons(true);
                 init.setEnabled(false);
+//                Thread thread = new Thread(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        double totalDistance = 0;
+//                        boolean convergence = false;
+//
+//                        while(!convergence && startFiltering) {
+//                            totalDistance = 0;
+//                            Log.i("",particles.size()+"");
+//                            for(Particle particle_one : particles) {
+//                                for(Particle particle_two : particles) {
+//                                    totalDistance += particle_one.distanceToOtherParticle(particle_two);
+//                                }
+//                            }
+//                            if(totalDistance/2 < 100) {
+//                                convergence = true;
+//                            }
+//                            Log.i("TotalDistance",totalDistance+"");
+//                        }
+//
+//                    }
+//                });
+//
+//                thread.start();
                 break;
             }
         }
@@ -314,35 +339,20 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
     // Method that makes the particles move over the layout, based on the direction and stepsize
     public void moveParticles(int direction) {
+
         for(int i = 0; i < stepSizeMultiplier; i++) {
-            for (ShapeDrawable drawable : particles) {
-                Rect r = drawable.getBounds();
+            for (Particle particle : particles) {
+                particle.updateLocation(direction, stepSize);
 
-                // UP - DOWN - LEFT - RIGHT
-                if (direction == 0) {
-                    drawable.setBounds(r.left, r.top - stepSize, r.right, r.bottom - stepSize);
-                } else if (direction == 1) {
-                    drawable.setBounds(r.left, r.top + stepSize, r.right, r.bottom + stepSize);
-                } else if (direction == 2) {
-                    drawable.setBounds(r.left - stepSize, r.top, r.right - stepSize, r.bottom);
-                } else if (direction == 3) {
-                    drawable.setBounds(r.left + stepSize, r.top, r.right + stepSize, r.bottom);
+                if(isCollision(particle.getShape())) {
+                    particle.setCollided(true);
+                    resampleParticle(particle);
                 }
             }
 
-            // Remove particle if there is a collision with a wall
-            Iterator<ShapeDrawable> itr = particles.iterator();
-            while (itr.hasNext()) {
-                ShapeDrawable particle = itr.next();
-                if (isCollision(particle)) {
-                    itr.remove();
-                }
-            }
-
-            // redrawing of the object
             canvas.drawColor(ContextCompat.getColor(this, R.color.colorDark));
-            for(ShapeDrawable p : particles) {
-                p.draw(canvas);
+            for(Particle particle : particles) {
+                particle.getShape().draw(canvas);
             }
             for(ShapeDrawable wall : walls) {
                 wall.draw(canvas);
@@ -354,6 +364,22 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
         canvasView.invalidate(); //redraw canvas
 
+    }
+
+    public void resampleParticle(Particle particle) {
+
+        while(particle.getCollided()) {
+            // Get the x and y coordinates of an uncollided random particle to resample a collided particle to
+            int randomParticleID = (int) (Math.random() * particles.size());
+            int selectedParticleX = particles.get(randomParticleID).getX();
+            int selectedParticleY = particles.get(randomParticleID).getY();
+
+            particle.resample(selectedParticleX, selectedParticleY);
+
+            if (!isCollision(particle.getShape())) {
+                particle.setCollided(false);
+            }
+        }
     }
 
 
@@ -374,11 +400,11 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
             wall.draw(canvas);
         }
 
-        Iterator<ShapeDrawable> itr = particles.iterator();
-        while (itr.hasNext()) {
-            ShapeDrawable particle = itr.next();
-            if (isCollision(particle)) {
-                itr.remove();
+        for(Particle particle : particles) {
+            ShapeDrawable particleShape = particle.getShape();
+            if(isCollision(particleShape)) {
+                particle.setCollided(true);
+                resampleParticle(particle);
             }
         }
 
@@ -386,22 +412,20 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
     }
 
     // Method that create a number of particles randomnly spread over the layout
-    public List<ShapeDrawable> createParticles() {
+    public List<Particle> createParticles() {
 
         int width = this.getDisplaySize()[0];
         int height = this.getDisplaySize()[1];
-        int pointRadius = 2;
 
-        List<ShapeDrawable> particles = new ArrayList<>();
+        List<Particle> particles = new ArrayList<>();
 
         for(int i = 0; i < nParticles; i++) {
-            ShapeDrawable particle = new ShapeDrawable(new OvalShape());
-            particle.getPaint().setColor(Color.RED);
             int x = (int) (Math.random()*width);
             int y = (int) (Math.random()*height);
-            particle.setBounds(x-pointRadius, y-pointRadius, x+pointRadius, y+pointRadius);
+            Particle particle = new Particle(x,y);
+
             particles.add(particle);
-            particle.draw(canvas);
+            particle.getShape().draw(canvas);
         }
 
         return particles;
@@ -566,13 +590,13 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
             // Dinner Table
             ShapeDrawable tableBoundary = new ShapeDrawable(new RectShape());
-            tableBoundary.setBounds(width/2-85, height / 6 * 4 - 65, width/2-25, height / 6 * 4 + 65);
+            tableBoundary.setBounds(width/2-85, height / 6 * 4 - 65, width/2-45, height / 6 * 4 + 65);
             tableBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorLight));
             walls.add(tableBoundary);
 
             // Kitchen Island
             ShapeDrawable kitchenBoundary = new ShapeDrawable(new RectShape());
-            kitchenBoundary.setBounds(width/2+40, height / 6 * 4 - 80, width/2+95, height / 6 * 4 + 80);
+            kitchenBoundary.setBounds(width/2+50, height / 6 * 4 - 80, width/2+95, height / 6 * 4 + 80);
             kitchenBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorLight));
             walls.add(kitchenBoundary);
 
@@ -584,7 +608,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
             // Closet
             ShapeDrawable closetBoundary = new ShapeDrawable(new RectShape());
-            closetBoundary.setBounds(width/2-45, 60, width/2-wallThickness, height / 6 - wallThickness);
+            closetBoundary.setBounds(width/2-40, 60, width/2-wallThickness, height / 6 - wallThickness);
             closetBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorLight));
             walls.add(closetBoundary);
 
@@ -608,9 +632,21 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
             desk2Boundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorLight));
             walls.add(desk2Boundary);
 
+            // Bookcases
+            ShapeDrawable booksBoundary = new ShapeDrawable(new RectShape());
+            booksBoundary.setBounds(100, height/6*2 + wallThickness, width / 2, height / 6*2 +25);
+            booksBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorLight));
+            walls.add(booksBoundary);
+
+            // Piano
+            ShapeDrawable pianoBoundary = new ShapeDrawable(new RectShape());
+            pianoBoundary.setBounds(100, height/6*3-25, width / 2 - 25, height / 6*3 - wallThickness);
+            pianoBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorLight));
+            walls.add(pianoBoundary);
+
             // Couch
             ShapeDrawable couchBoundary = new ShapeDrawable(new RectShape());
-            couchBoundary.setBounds(width/2+45, height/6*5+10, width/2+95, height / 6 * 5 +140);
+            couchBoundary.setBounds(width/2+45, height/6*5+20, width/2+85, height / 6 * 5 +140);
             couchBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorLight));
             walls.add(couchBoundary);
 
