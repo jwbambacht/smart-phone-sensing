@@ -1,5 +1,7 @@
 package com.example.whereami;
 
+import android.util.Log;
+
 public class StepDetector {
 
     private static final int ACCEL_RING_SIZE = 50;
@@ -20,23 +22,23 @@ public class StepDetector {
     }
 
 
-    public void updateAccel(long timeNs, float x, float y, float z) {
-        float[] currentAccel = new float[3];
-        currentAccel[0] = x;
-        currentAccel[1] = y;
-        currentAccel[2] = z;
+    public void updateAcceleration(long timeNs, float x, float y, float z) {
+        float[] currentAcceleration = new float[3];
+        currentAcceleration[0] = x;
+        currentAcceleration[1] = y;
+        currentAcceleration[2] = z;
 
         // First step is to update our guess of where the global z vector is.
         accelRingCounter++;
-        accelRingZ[accelRingCounter % ACCEL_RING_SIZE] = currentAccel[2];
+        accelRingZ[accelRingCounter % ACCEL_RING_SIZE] = currentAcceleration[2];
 
-        float[] worldZ = new float[3];
-        worldZ[2] = sum(accelRingZ) / Math.min(accelRingCounter, ACCEL_RING_SIZE);
+        float[] zAxis = new float[3];
+        zAxis[2] = sum(accelRingZ) / Math.min(accelRingCounter, ACCEL_RING_SIZE);
 
-        float normalization_factor = norm(worldZ);
-        worldZ[2] = worldZ[2] / normalization_factor;
+        float normalization_factor = norm(zAxis);
+        zAxis[2] = zAxis[2] / normalization_factor;
 
-        float currentZ = dot(worldZ, currentAccel) - normalization_factor;
+        float currentZ = dot(zAxis, currentAcceleration) - normalization_factor;
         velRingCounter++;
         velRing[velRingCounter % VEL_RING_SIZE] = currentZ;
 

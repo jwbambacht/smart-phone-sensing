@@ -54,25 +54,22 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
     private int nParticles;
     private int numSteps;
 
-    int test;
-
     // Variables for orientation and filtering
     private boolean startFiltering;
     private boolean initializeOrientation;
-    private boolean initialOrientationGathered;
-    private int initialOrientationCount;
-    private int initialOrientation;
-    private int[] initialOrientationVector;
+    private boolean anchorGathered;
+    private int anchorCount;
+    private int anchor;
+    private int[] anchorVector;
 
     // Sensors and sensor variables
     private SensorManager sensorManager;
     private StepDetector simpleStepDetector;
     private Sensor rotationSensor;
     private Sensor accelerometerSensor;
-    private float[] mRotation = new float[3];                       // Rotation sensor vector
-    private float[] mRotationMatrixFromVector = new float[9];       // Orientation angles from accelerometer and magnetometer
-    private float[] mOrientation = new float[3];                    // Orientation angles from accelerometer and magnetometer
-    private double currentAzimuth, preAzimuth;                      // Azimuth
+    private double azimuth, lastAzimuth;
+
+    CircularQueue<Double> queue;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -85,17 +82,16 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         // Obtain settings from shared preferences and display size
         getSettings();
 
-
-        test = 0;
-
         // Set variables
         stepSize = 5;
         numSteps = 0;
         startFiltering = false;
         initializeOrientation = false;
-        initialOrientationCount = 0;
-        initialOrientationGathered = false;
-        initialOrientation = 0;
+        anchorCount = 0;
+        anchorGathered = false;
+        anchor = 0;
+
+        queue = new CircularQueue<>(2);
 
         // Sensors
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
@@ -133,32 +129,43 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
     // Method that determines whether the rotation vector sensor changed its state and determines the azimuth
     private SensorEventListener rotationVectorEventListener = new SensorEventListener() {
-        public void onAccuracyChanged(Sensor sensor, int accuracy) {
-        }
+        public void onAccuracyChanged(Sensor sensor, int accuracy) {}
 
         public void onSensorChanged(SensorEvent event) {
-            System.arraycopy(event.values, 0, mRotation, 0, 3);
-            SensorManager.getRotationMatrixFromVector(mRotationMatrixFromVector, mRotation);
 
-            currentAzimuth = (int) ( Math.toDegrees( SensorManager.getOrientation( mRotationMatrixFromVector, mOrientation )[0] ) + 360 ) % 360;
+            float[] rotationMatrix = new float[16];
+            float[] remappedRotationMatrix = new float[16];
+            float[] orientations = new float[3];
+
+            // Convert quaternion into a rotation matrix
+            // Remap coordinate system of the rotation matrix
+            // Convert the rotation matrix into an array of orientations, specifying the rotation of the device along the Z, X, and Y axes
+            // Convert horizontal orientation to degrees
+            SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values);
+            SensorManager.remapCoordinateSystem(rotationMatrix, SensorManager.AXIS_X, SensorManager.AXIS_Z, remappedRotationMatrix);
+            SensorManager.getOrientation(remappedRotationMatrix, orientations);
+            orientations[0] = (float)(Math.toDegrees(orientations[0]));
+            azimuth = (double) (orientations[0] + 360 ) % 360;
+
+            // Add azimuth to queue to be able to detect direction changes without counting a step
+            queue.add(azimuth);
 
             // If init button is pressed we obtain 5 values for azimuth and take the average for initial orientation
-            if(initializeOrientation && !initialOrientationGathered && initialOrientationCount < 5) {
-                initialOrientation += (int) currentAzimuth;
-                initialOrientationCount++;
-                if(initialOrientationCount == 5) {
+            if(initializeOrientation && !anchorGathered && anchorCount < 5) {
+                anchor += (int) azimuth;
+                anchorCount++;
+                if(anchorCount == 5) {
                     initializeOrientation = false;
-                    initialOrientationGathered = true;
-                    initialOrientation = (int) initialOrientation/5;
+                    anchorGathered = true;
+                    anchor = anchor/5;
                 }
-
             }
 
             // If start button is pressed we detect a change in azimuth if the difference is big enough to compensate for sensitivity
             if(startFiltering) {
-                if (Math.abs(currentAzimuth - preAzimuth) >= 30.0) {
-                    preAzimuth = currentAzimuth;
-                    textview_azimuth.setText("Azimuth:\n" + preAzimuth);
+                if (Math.abs(azimuth-lastAzimuth) >= 30) {
+                    lastAzimuth = azimuth;
+                    textview_azimuth.setText("Azimuth:\n" + lastAzimuth);
                 }
             }
         }
@@ -166,13 +173,14 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
     // Method that determines whether the accelerometer sensor changed its state
     private SensorEventListener accelerometerEventListener = new SensorEventListener() {
-        public void onAccuracyChanged(Sensor sensor, int accuracy) {
-        }
+        public void onAccuracyChanged(Sensor sensor, int accuracy) {}
 
         public void onSensorChanged(SensorEvent event) {
             if(startFiltering) {
-                if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-                    simpleStepDetector.updateAccel(event.timestamp, event.values[0], event.values[1], event.values[2]);
+                // To account for changes in direction (90 degrees) we only allow a step to be included if the (absolute) rotation is smaller than 30 degrees
+
+                if(Math.abs(queue.getLast()-queue.getFirst()) < 30) {
+                    simpleStepDetector.updateAcceleration(event.timestamp, event.values[0], event.values[1], event.values[2]);
                 }
             }
         }
@@ -246,9 +254,9 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
             case R.id.button_reset: {
                 startFiltering = false;
                 initializeOrientation = false;
-                initialOrientationGathered = false;
-                initialOrientationVector = new int[5];
-                initialOrientation = 0;
+                anchorGathered = false;
+                anchorVector = new int[5];
+                anchor = 0;
                 numSteps = 0;
 
                 toggleButtons(false);
@@ -268,30 +276,6 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                 startFiltering = true;
                 toggleButtons(true);
                 init.setEnabled(false);
-//                Thread thread = new Thread(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        double totalDistance = 0;
-//                        boolean convergence = false;
-//
-//                        while(!convergence && startFiltering) {
-//                            totalDistance = 0;
-//                            Log.i("",particles.size()+"");
-//                            for(Particle particle_one : particles) {
-//                                for(Particle particle_two : particles) {
-//                                    totalDistance += particle_one.distanceToOtherParticle(particle_two);
-//                                }
-//                            }
-//                            if(totalDistance/2 < 100) {
-//                                convergence = true;
-//                            }
-//                            Log.i("TotalDistance",totalDistance+"");
-//                        }
-//
-//                    }
-//                });
-//
-//                thread.start();
                 break;
             }
         }
@@ -359,15 +343,12 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
             }
 
             textview_particle_count.setText("Particles:\n"+particles.size());
-
         }
 
         canvasView.invalidate(); //redraw canvas
-
     }
 
     public void resampleParticle(Particle particle) {
-
         while(particle.getCollided()) {
             // Get the x and y coordinates of an uncollided random particle to resample a collided particle to
             int randomParticleID = (int) (Math.random() * particles.size());
@@ -381,7 +362,6 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
             }
         }
     }
-
 
     // Method that prepares the canvas with particles and layout
     public void prepareCanvas() {
@@ -422,7 +402,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         for(int i = 0; i < nParticles; i++) {
             int x = (int) (Math.random()*width);
             int y = (int) (Math.random()*height);
-            Particle particle = new Particle(x,y);
+            Particle particle = new Particle(x,y,nParticles);
 
             particles.add(particle);
             particle.getShape().draw(canvas);
@@ -463,7 +443,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
     @Override
     public int getDirection() {
 
-        int correction = (int) this.currentAzimuth-initialOrientation;
+        int correction = (int) this.azimuth-anchor;
         int direction = 0;
 
         if(correction < 0) {

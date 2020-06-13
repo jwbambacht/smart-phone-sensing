@@ -13,11 +13,11 @@ public class Particle {
     int pointRadius;
     double weight;
 
-    public Particle(int x, int y) {
+    public Particle(int x, int y, int nParticles) {
         this.x = x;
         this.y = y;
         this.pointRadius = 2;
-        this.weight = 1;
+        this.weight = 1/nParticles;
         this.shape = new ShapeDrawable(new OvalShape());
         this.shape.getPaint().setColor(Color.RED);
         this.shape.setBounds(this.x-this.pointRadius, this.y-this.pointRadius, this.x+this.pointRadius, this.y+this.pointRadius);
@@ -43,6 +43,10 @@ public class Particle {
         return this.y;
     }
 
+    public double getWeight() { return this.weight; }
+
+    public void setWeight(double weight) { this.weight = weight; }
+
     public void resample(int x, int y) {
         int[] offPlacement = new int[]{-4,-3,-2,-1,0,1,2,3,4};
         int randomXOffPlacement = offPlacement[(int) (Math.random() * offPlacement.length)];
@@ -52,6 +56,8 @@ public class Particle {
         this.y = y+randomYOffPlacement;
 
         this.shape.setBounds(this.x-this.pointRadius, this.y-this.pointRadius, this.x+this.pointRadius, this.y+this.pointRadius);
+
+        this.weight = this.weight/2;
     }
 
     public void updateLocation(int direction, int stepSize) {
