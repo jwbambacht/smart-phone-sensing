@@ -119,7 +119,7 @@ public class Util  extends AppCompatActivity {
 
     // Method that imports the processed data
     static HashMap<String,Network> readData(Context context) {
-        InputStream input = context.getResources().openRawResource(R.raw.data_to_phone);
+        InputStream input = context.getResources().openRawResource(R.raw.data_to_phone_app2);
 
         BufferedReader reader = new BufferedReader(new InputStreamReader(input, Charset.forName("UTF-8")));
         String line = "";
