@@ -45,10 +45,10 @@ public class Particle {
 
     public double getWeight() { return this.weight; }
 
-    public void setWeight(double weight) { this.weight = weight; }
+    public void setWeight(double weight) { this.weight += weight; }
 
     public void resample(int x, int y) {
-        int[] offPlacement = new int[]{-4,-3,-2,-1,0,1,2,3,4};
+        int[] offPlacement = new int[]{-1,0,1};
         int randomXOffPlacement = offPlacement[(int) (Math.random() * offPlacement.length)];
         int randomYOffPlacement = offPlacement[(int) (Math.random() * offPlacement.length)];
 
@@ -56,8 +56,6 @@ public class Particle {
         this.y = y+randomYOffPlacement;
 
         this.shape.setBounds(this.x-this.pointRadius, this.y-this.pointRadius, this.x+this.pointRadius, this.y+this.pointRadius);
-
-        this.weight = this.weight/2;
     }
 
     public void updateLocation(int direction, int stepSize) {

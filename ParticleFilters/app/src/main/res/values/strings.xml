@@ -17,18 +17,6 @@
         <item>30</item>
         <item>35</item>
         <item>40</item>
-        <item>45</item>
-        <item>50</item>
-        <item>55</item>
-        <item>60</item>
-        <item>65</item>
-        <item>70</item>
-        <item>75</item>
-        <item>80</item>
-        <item>85</item>
-        <item>90</item>
-        <item>95</item>
-        <item>100</item>
     </string-array>
 
     <string-array name="stepsize_array">
@@ -41,17 +29,11 @@
 
     <string-array name="particles_array">
         <item>1000</item>
+        <item>1500</item>
         <item>2000</item>
+        <item>2500</item>
         <item>3000</item>
-        <item>4000</item>
-        <item>5000</item>
-        <item>6000</item>
-        <item>7000</item>
-        <item>8000</item>
-        <item>9000</item>
-        <item>10000</item>
     </string-array>
-
 
     <string name="view_home_title">ParticleFilters</string>
     <string name="view_settings_title">Settings</string>

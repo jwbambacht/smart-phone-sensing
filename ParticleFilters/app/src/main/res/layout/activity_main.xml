@@ -56,6 +56,19 @@
             android:text="R" />
 
         <TextView
+            android:id="@+id/textview_cell"
+            android:layout_width="60dp"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:layout_marginRight="5dp"
+            android:layout_above="@id/textview_direction"
+            android:layout_alignParentRight="true"
+            android:textSize="10sp"
+            android:textColor="@color/colorLight"
+            android:textAlignment="center"
+            android:text="" />
+
+        <TextView
             android:id="@+id/textview_direction"
             android:layout_width="60dp"
             android:layout_height="wrap_content"
