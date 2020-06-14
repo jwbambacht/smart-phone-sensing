@@ -81,10 +81,33 @@
             android:layout_marginRight="10dp" />
 
         <TextView
-            android:id="@+id/textview_particles"
+            android:id="@+id/textview_spinner_steptime"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:layout_below="@+id/spinner_stepsize"
+            android:text="Average time for a step"
+            android:textColor="@color/colorLight"
+            android:textStyle="italic"
+            android:layout_marginTop="10dp"
+            android:layout_marginStart="15dp"
+            android:layout_marginEnd="10dp" />
+
+        <Spinner
+            android:id="@+id/spinner_steptime"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_below="@+id/textview_spinner_steptime"
+            android:background="@android:drawable/btn_dropdown"
+            android:spinnerMode="dropdown"
+            android:layout_marginTop="10dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp" />
+
+        <TextView
+            android:id="@+id/textview_particles"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/spinner_steptime"
             android:text="Choose number of particles"
             android:textColor="@color/colorLight"
             android:textStyle="italic"

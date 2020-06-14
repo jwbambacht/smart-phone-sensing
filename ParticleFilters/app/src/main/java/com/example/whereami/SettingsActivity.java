@@ -13,7 +13,7 @@ import android.widget.Toast;
 public class SettingsActivity extends AppCompatActivity implements OnClickListener {
 
     SharedPreferences settingsSharedPreferences;
-    Spinner layoutSpinner, sensitivitySpinner, stepsizeSpinner, particlesSpinner;
+    Spinner layoutSpinner, sensitivitySpinner, stepsizeSpinner, steptimeSpinner, particlesSpinner;
     private Button buttonSave;
 
     @Override
@@ -31,7 +31,8 @@ public class SettingsActivity extends AppCompatActivity implements OnClickListen
         String selectedLayout = settingsSharedPreferences.getString("layout", "Joost");
         String selectedSensitivity = settingsSharedPreferences.getString("sensitivity", "10");
         String selectedStepSize = settingsSharedPreferences.getString("stepsize", "1");
-        String selectedParticles = settingsSharedPreferences.getString("particles", "5000");
+        String selectedStepTime = settingsSharedPreferences.getString("steptime", "0.5");
+        String selectedParticles = settingsSharedPreferences.getString("particles", "2000");
 
         // Create Spinners
         layoutSpinner = (Spinner) findViewById(R.id.spinner_layout);
@@ -48,6 +49,11 @@ public class SettingsActivity extends AppCompatActivity implements OnClickListen
         ArrayAdapter<String> stepsizeAdapter = new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item, getResources().getStringArray(R.array.stepsize_array));
         stepsizeSpinner.setAdapter(stepsizeAdapter);
         stepsizeSpinner.setSelection(stepsizeAdapter.getPosition(selectedStepSize));
+
+        steptimeSpinner = (Spinner) findViewById(R.id.spinner_steptime);
+        ArrayAdapter<String> steptimeAdapter = new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item, getResources().getStringArray(R.array.steptime_array));
+        steptimeSpinner.setAdapter(steptimeAdapter);
+        steptimeSpinner.setSelection(steptimeAdapter.getPosition(selectedStepTime));
 
         particlesSpinner = (Spinner) findViewById(R.id.spinner_particles);
         ArrayAdapter<String> particlesAdapter = new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item, getResources().getStringArray(R.array.particles_array));
@@ -68,12 +74,14 @@ public class SettingsActivity extends AppCompatActivity implements OnClickListen
                 String newLayout = layoutSpinner.getSelectedItem().toString();
                 String newSensitivity = sensitivitySpinner.getSelectedItem().toString();
                 String newStepSize = stepsizeSpinner.getSelectedItem().toString();
+                String newStepTime = steptimeSpinner.getSelectedItem().toString();
                 String newParticles = particlesSpinner.getSelectedItem().toString();
 
                 SharedPreferences.Editor editor = settingsSharedPreferences.edit();
                 editor.putString("layout",newLayout);
                 editor.putString("sensitivity",newSensitivity);
                 editor.putString("stepsize",newStepSize);
+                editor.putString("steptime",newStepTime);
                 editor.putString("particles",newParticles);
                 editor.commit();
 

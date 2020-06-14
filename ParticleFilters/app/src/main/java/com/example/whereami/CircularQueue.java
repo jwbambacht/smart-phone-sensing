@@ -15,4 +15,13 @@ public class CircularQueue<Double> extends LinkedList<Double> {
             removeFirst();
         return super.add(element);
     }
+
+    public double sum(CircularQueue<java.lang.Double> queue) {
+        double sum = 0;
+
+        for(int i = 0; i < queue.size(); i++) {
+            sum += queue.get(i);
+        }
+        return sum;
+    }
 }

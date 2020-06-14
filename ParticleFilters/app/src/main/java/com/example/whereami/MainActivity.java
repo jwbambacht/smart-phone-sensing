@@ -25,6 +25,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -53,6 +54,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
     private int stepSize;
     private float sensitivity;
     private int stepSizeMultiplier;
+    private double stepTime;
     private int nParticles;
     private int numSteps;
     private String[] cellNames;
@@ -67,10 +69,10 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
     // Sensors and sensor variables
     private SensorManager sensorManager;
-    private StepDetector simpleStepDetector;
     private Sensor rotationSensor;
     private Sensor accelerometerSensor;
     private double azimuth, lastAzimuth;
+    private StepCounter stepCounter;
 
     CircularQueue<Double> queue;
 
@@ -101,8 +103,8 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         accelerometerSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         rotationSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
-        simpleStepDetector = new StepDetector();
-        simpleStepDetector.registerListener(this);
+        stepCounter = new StepCounter();
+        stepCounter.registerListener(this);
         sensorManager.registerListener(accelerometerEventListener, accelerometerSensor, SensorManager.SENSOR_DELAY_FASTEST);
         sensorManager.registerListener(rotationVectorEventListener, rotationSensor, SensorManager.SENSOR_DELAY_NORMAL);
 
@@ -197,11 +199,11 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         public void onAccuracyChanged(Sensor sensor, int accuracy) {}
 
         public void onSensorChanged(SensorEvent event) {
-            if(startFiltering) {
-                // To account for changes in direction (90 degrees) we only allow a step to be included if the (absolute) rotation is smaller than 30 degrees
 
+            // To account for changes in direction (90 degrees) we only allow a step to be included if the (absolute) rotation is smaller than 30 degrees
+            if(startFiltering) {
                 if(Math.abs(queue.getLast()-queue.getFirst()) < 30) {
-                    simpleStepDetector.updateAcceleration(event.timestamp, event.values[0], event.values[1], event.values[2]);
+                    stepCounter.count(TimeUnit.SECONDS.convert(event.timestamp, TimeUnit.NANOSECONDS), event.values);
                 }
             }
         }
@@ -392,6 +394,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         layout = settingsSharedPreferences.getString("layout", "Joost");
         sensitivity = Float.parseFloat(settingsSharedPreferences.getString("sensitivity", "10"));
         stepSizeMultiplier = Integer.parseInt(settingsSharedPreferences.getString("stepsize", "1"));
+        stepTime = Double.parseDouble(settingsSharedPreferences.getString("steptime","0.5"));
         nParticles = Integer.parseInt(settingsSharedPreferences.getString("particles", "5000"));
 
         width = this.getDisplaySize()[0];
@@ -400,7 +403,16 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
     // Method that makes the particles move over the layout, based on the direction and stepsize
     // StepSizeMultiplier is used to optimize the number of steps to the actual walked distance. Requires manual optimization
+
+    public void moveParticles(int direction, boolean step) {
+        numSteps++;
+        textview_steps.setText("Steps:\n"+numSteps);
+
+        moveParticles(direction);
+    }
+
     public void moveParticles(int direction) {
+
         for(int i = 0; i < stepSizeMultiplier; i++) {
             for (Particle particle : particles) {
                 particle.updateLocation(direction, stepSize);
@@ -508,20 +520,13 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         return wallShape.intersect(particle.getBounds());
     }
 
-    // Method for step interface
-    @Override
-    public void step(long timeNs) {
-        numSteps++;
-        textview_steps.setText("Steps:\n"+numSteps);
-    }
-
-    // Method for step interface
+    // Method for step interface, passing the sensitivity/threshold of step determination
     @Override
     public float getSensitivity() {
         return this.sensitivity;
     }
 
-    // Method for step interface
+    // Method for step interface, passing the direction to walk
     @Override
     public int getDirection() {
 
@@ -548,6 +553,12 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
         return direction;
     }
+
+    // Method for step interface, passing the (average) time per step
+    @Override
+    public double getStepTime() {
+        return this.stepTime;
+    };
 
     // Method that creates the layouts
     public List<ShapeDrawable> createLayout() {
