@@ -7,7 +7,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.Message;
-import android.util.Log;
 import android.view.View.OnClickListener;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -25,7 +24,6 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import android.hardware.Sensor;
@@ -299,6 +297,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                 startFiltering = true;
                 toggleButtons(true);
                 init.setEnabled(false);
+                start.setEnabled(false);
 
                 currentCellThread.start();
                 break;
@@ -306,6 +305,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         }
     }
 
+    // Thread for calculation of weights of all particles in each cell
     private Thread currentCellThread = new Thread(new Runnable() {
         @Override
         public void run() {
@@ -319,7 +319,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                         cellWeights[currentCell] += particle.getWeight();
                     }
 
-                    float[] weightRes = normalize(cellWeights);
+                    float[] weightRes = Util.normalize(cellWeights);
 
                     Message message = new Message();
                     Bundle bundle = new Bundle();
@@ -334,13 +334,14 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         }
     });
 
+    // Handler that returns the weights to the textviews
     private Handler currentCellHandler = new Handler() {
         @Override
         public void handleMessage(Message message) {
             Bundle bundle = message.getData();
             float[] keys = bundle.getFloatArray("weights");
 
-            int maxValue = maxValue(keys);
+            int maxValue = Util.maxValue(keys);
 
             for(int i = 0; i < keys.length; i++) {
                 if(i == maxValue) {
@@ -355,31 +356,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         }
     };
 
-    public int maxValue(float[] array) {
-        float max = 0;
-        int index = 0;
 
-        for (int i = 0; i < array.length; i++) {
-            if (array[i] > max) {
-                max = array[i];
-                index = i;
-            }
-        }
-
-        return index;
-    }
-
-    public float[] normalize(float[] array) {
-        float sum = 0;
-        for(int i = 0; i < array.length; i++) {
-            sum += array[i];
-        }
-        for(int i = 0; i < array.length; i++) {
-            array[i] = array[i]/sum;
-        }
-
-        return array;
-    }
 
     // Method that toggles the state of some of the buttons for a better user experience
     public void toggleButtons(boolean onoff) {
@@ -422,8 +399,8 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
     }
 
     // Method that makes the particles move over the layout, based on the direction and stepsize
+    // StepSizeMultiplier is used to optimize the number of steps to the actual walked distance. Requires manual optimization
     public void moveParticles(int direction) {
-
         for(int i = 0; i < stepSizeMultiplier; i++) {
             for (Particle particle : particles) {
                 particle.updateLocation(direction, stepSize);
@@ -448,6 +425,8 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         canvasView.invalidate(); //redraw canvas
     }
 
+    // Method that resample a collided particle. It randomnly chooses another particle and takes its current location.
+    // Resamples based on more random numbers. If collided with a wall, the process repeats until not collided.
     public void resampleParticle(Particle particle) {
         while(particle.getCollided()) {
             // Get the x and y coordinates of an uncollided random particle to resample a collided particle to
@@ -490,6 +469,9 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         }
 
         textview_particle_count.setText("Particles:\n"+particles.size());
+        textview_direction.setText("Direction:\n-");
+        textview_steps.setText("Steps:\n0");
+        textview_azimuth.setText("Azimuth:\n-");
     }
 
     // Method that create a number of particles randomnly spread over the layout
