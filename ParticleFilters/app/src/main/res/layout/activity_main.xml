@@ -27,7 +27,7 @@
             android:layout_width="60dp"
             android:layout_height="60dp"
             android:layout_marginLeft="5dp"
-            android:layout_above="@id/button_down"
+            android:layout_alignParentTop="true"
             android:text="U" />
 
         <Button
@@ -35,7 +35,7 @@
             android:layout_width="60dp"
             android:layout_height="60dp"
             android:layout_marginLeft="5dp"
-            android:layout_above="@id/button_left"
+            android:layout_below="@+id/button_up"
             android:text="D" />
 
         <Button
@@ -43,91 +43,26 @@
             android:layout_width="60dp"
             android:layout_height="60dp"
             android:layout_marginLeft="5dp"
-            android:layout_above="@id/button_right"
+            android:layout_below="@+id/button_down"
             android:text="L" />
 
         <Button
             android:id="@+id/button_right"
             android:layout_width="60dp"
             android:layout_height="60dp"
-            android:layout_alignParentBottom="true"
+            android:layout_below="@+id/button_left"
             android:layout_marginLeft="5dp"
             android:layout_marginBottom="0dp"
             android:text="R" />
-
-        <TextView
-            android:id="@+id/textview_cell"
-            android:layout_width="60dp"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="10dp"
-            android:layout_marginRight="5dp"
-            android:layout_above="@id/textview_direction"
-            android:layout_alignParentRight="true"
-            android:textSize="10sp"
-            android:textColor="@color/colorLight"
-            android:textAlignment="center"
-            android:text="" />
-
-        <TextView
-            android:id="@+id/textview_direction"
-            android:layout_width="60dp"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="10dp"
-            android:layout_marginRight="5dp"
-            android:layout_above="@id/textview_steps"
-            android:layout_alignParentRight="true"
-            android:textSize="10sp"
-            android:textColor="@color/colorLight"
-            android:textAlignment="center"
-            android:text="" />
-
-        <TextView
-            android:id="@+id/textview_steps"
-            android:layout_width="60dp"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="10dp"
-            android:layout_marginRight="5dp"
-            android:layout_above="@id/textview_azimuth"
-            android:layout_alignParentRight="true"
-            android:textSize="10sp"
-            android:textColor="@color/colorLight"
-            android:textAlignment="center"
-            android:text="" />
-
-        <TextView
-            android:id="@+id/textview_azimuth"
-            android:layout_width="60dp"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="10dp"
-            android:layout_marginRight="5dp"
-            android:layout_above="@id/textview_particle_count"
-            android:layout_alignParentRight="true"
-            android:textSize="10sp"
-            android:textColor="@color/colorLight"
-            android:textAlignment="center"
-            android:text="" />
-
-        <TextView
-            android:id="@+id/textview_particle_count"
-            android:layout_width="60dp"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="10dp"
-            android:layout_marginRight="5dp"
-            android:layout_above="@id/button_start"
-            android:layout_alignParentRight="true"
-            android:textSize="10sp"
-            android:textColor="@color/colorLight"
-            android:textAlignment="center"
-            android:text="" />
 
         <Button
             android:id="@+id/button_start"
             android:layout_width="60dp"
             android:layout_height="60dp"
             android:layout_marginBottom="0dp"
-            android:layout_marginRight="5dp"
-            android:layout_above="@id/button_init"
-            android:layout_alignParentRight="true"
+            android:layout_marginLeft="5dp"
+            android:layout_above="@+id/button_init"
+            android:layout_alignParentLeft="true"
             android:textSize="10sp"
             android:text="Start" />
 
@@ -136,9 +71,9 @@
             android:layout_width="60dp"
             android:layout_height="60dp"
             android:layout_marginBottom="0dp"
-            android:layout_marginRight="5dp"
-            android:layout_above="@id/button_reset"
-            android:layout_alignParentRight="true"
+            android:layout_marginLeft="5dp"
+            android:layout_above="@+id/button_reset"
+            android:layout_alignParentLeft="true"
             android:textSize="10sp"
             android:text="Init" />
 
@@ -146,12 +81,192 @@
             android:id="@+id/button_reset"
             android:layout_width="60dp"
             android:layout_height="60dp"
-            android:layout_marginBottom="0dp"
-            android:layout_marginRight="5dp"
-            android:layout_alignParentRight="true"
+            android:layout_marginBottom="-5dp"
+            android:layout_marginLeft="5dp"
+            android:layout_alignParentLeft="true"
             android:layout_alignParentBottom="true"
             android:textSize="10sp"
             android:text="Reset" />
+
+        <TextView
+            android:id="@+id/textview_cell_A"
+            android:layout_width="50dp"
+            android:layout_height="30dp"
+            android:layout_marginBottom="10dp"
+            android:layout_marginRight="5dp"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentTop="true"
+            android:textSize="9sp"
+            android:background="@drawable/cell_open"
+            android:textColor="@color/colorLight"
+            android:textAlignment="center"
+            android:gravity="center"
+            android:text="" />
+
+        <TextView
+            android:id="@+id/textview_cell_B"
+            android:layout_width="50dp"
+            android:layout_height="30dp"
+            android:layout_marginBottom="10dp"
+            android:layout_marginRight="5dp"
+            android:layout_below="@+id/textview_cell_A"
+            android:layout_alignParentRight="true"
+            android:textSize="9sp"
+            android:background="@drawable/cell_open"
+            android:textColor="@color/colorLight"
+            android:textAlignment="center"
+            android:gravity="center"
+            android:text="" />
+
+        <TextView
+            android:id="@+id/textview_cell_C"
+            android:layout_width="50dp"
+            android:layout_height="30dp"
+            android:layout_marginBottom="10dp"
+            android:layout_marginRight="5dp"
+            android:layout_below="@+id/textview_cell_B"
+            android:layout_alignParentRight="true"
+            android:textSize="9sp"
+            android:background="@drawable/cell_open"
+            android:textColor="@color/colorLight"
+            android:textAlignment="center"
+            android:gravity="center"
+            android:text="" />
+
+        <TextView
+            android:id="@+id/textview_cell_D"
+            android:layout_width="50dp"
+            android:layout_height="30dp"
+            android:layout_marginBottom="10dp"
+            android:layout_marginRight="5dp"
+            android:layout_below="@+id/textview_cell_C"
+            android:layout_alignParentRight="true"
+            android:textSize="9sp"
+            android:background="@drawable/cell_open"
+            android:textColor="@color/colorLight"
+            android:textAlignment="center"
+            android:gravity="center"
+            android:text="" />
+
+        <TextView
+            android:id="@+id/textview_cell_E"
+            android:layout_width="50dp"
+            android:layout_height="30dp"
+            android:layout_marginBottom="10dp"
+            android:layout_marginRight="5dp"
+            android:layout_below="@+id/textview_cell_D"
+            android:layout_alignParentRight="true"
+            android:textSize="9sp"
+            android:background="@drawable/cell_open"
+            android:textColor="@color/colorLight"
+            android:textAlignment="center"
+            android:gravity="center"
+            android:text="" />
+
+        <TextView
+            android:id="@+id/textview_cell_F"
+            android:layout_width="50dp"
+            android:layout_height="30dp"
+            android:layout_marginBottom="10dp"
+            android:layout_marginRight="5dp"
+            android:layout_below="@+id/textview_cell_E"
+            android:layout_alignParentRight="true"
+            android:textSize="9sp"
+            android:background="@drawable/cell_open"
+            android:textColor="@color/colorLight"
+            android:textAlignment="center"
+            android:gravity="center"
+            android:text="" />
+
+        <TextView
+            android:id="@+id/textview_cell_G"
+            android:layout_width="50dp"
+            android:layout_height="30dp"
+            android:layout_marginBottom="10dp"
+            android:layout_marginRight="5dp"
+            android:layout_below="@+id/textview_cell_F"
+            android:layout_alignParentRight="true"
+            android:textSize="9sp"
+            android:background="@drawable/cell_open"
+            android:textColor="@color/colorLight"
+            android:textAlignment="center"
+            android:gravity="center"
+            android:text="" />
+
+        <TextView
+            android:id="@+id/textview_cell_H"
+            android:layout_width="50dp"
+            android:layout_height="30dp"
+            android:layout_marginRight="5dp"
+            android:layout_below="@+id/textview_cell_G"
+            android:layout_alignParentRight="true"
+            android:textSize="9sp"
+            android:background="@drawable/cell_open"
+            android:textColor="@color/colorLight"
+            android:textAlignment="center"
+            android:gravity="center"
+            android:text="" />
+
+        <TextView
+            android:id="@+id/textview_direction"
+            android:layout_width="50dp"
+            android:layout_height="30dp"
+            android:layout_marginBottom="10dp"
+            android:layout_marginRight="5dp"
+            android:layout_above="@+id/textview_steps"
+            android:layout_alignParentRight="true"
+            android:textSize="9sp"
+            android:background="@drawable/cell_open"
+            android:textColor="@color/colorLight"
+            android:textAlignment="center"
+            android:gravity="center"
+            android:text="" />
+
+        <TextView
+            android:id="@+id/textview_steps"
+            android:layout_width="50dp"
+            android:layout_height="30dp"
+            android:layout_marginBottom="10dp"
+            android:layout_marginRight="5dp"
+            android:layout_above="@+id/textview_azimuth"
+            android:layout_alignParentRight="true"
+            android:textSize="9sp"
+            android:background="@drawable/cell_open"
+            android:textColor="@color/colorLight"
+            android:textAlignment="center"
+            android:gravity="center"
+            android:text="" />
+
+        <TextView
+            android:id="@+id/textview_azimuth"
+            android:layout_width="50dp"
+            android:layout_height="30dp"
+            android:layout_marginBottom="10dp"
+            android:layout_marginRight="5dp"
+            android:layout_above="@+id/textview_particle_count"
+            android:layout_alignParentRight="true"
+            android:textSize="9sp"
+            android:background="@drawable/cell_open"
+            android:textColor="@color/colorLight"
+            android:textAlignment="center"
+            android:gravity="center"
+            android:text="" />
+
+        <TextView
+            android:id="@+id/textview_particle_count"
+            android:layout_width="50dp"
+            android:layout_height="30dp"
+            android:layout_marginBottom="0dp"
+            android:layout_marginRight="5dp"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentRight="true"
+            android:textSize="9sp"
+            android:background="@drawable/cell_open"
+            android:textColor="@color/colorLight"
+            android:textAlignment="center"
+            android:gravity="center"
+            android:text="" />
+
     </RelativeLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

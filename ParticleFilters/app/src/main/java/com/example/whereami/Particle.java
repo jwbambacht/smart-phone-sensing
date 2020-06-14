@@ -11,13 +11,16 @@ public class Particle {
     ShapeDrawable shape;
     boolean collided;
     int pointRadius;
-    double weight;
+    float weight;
+    int width, height;
 
-    public Particle(int x, int y, int nParticles) {
+    public Particle(int x, int y, int nParticles, int width, int height) {
         this.x = x;
         this.y = y;
         this.pointRadius = 2;
-        this.weight = 1/nParticles;
+        this.width = width;
+        this.height = height;
+        this.weight = 1;
         this.shape = new ShapeDrawable(new OvalShape());
         this.shape.getPaint().setColor(Color.RED);
         this.shape.setBounds(this.x-this.pointRadius, this.y-this.pointRadius, this.x+this.pointRadius, this.y+this.pointRadius);
@@ -43,9 +46,9 @@ public class Particle {
         return this.y;
     }
 
-    public double getWeight() { return this.weight; }
+    public float getWeight() { return this.weight; }
 
-    public void setWeight(double weight) { this.weight += weight; }
+    public void lowerWeight() { this.weight = this.weight/2; }
 
     public void resample(int x, int y) {
         int[] offPlacement = new int[]{-1,0,1};
@@ -56,6 +59,33 @@ public class Particle {
         this.y = y+randomYOffPlacement;
 
         this.shape.setBounds(this.x-this.pointRadius, this.y-this.pointRadius, this.x+this.pointRadius, this.y+this.pointRadius);
+    }
+
+    public int getCurrentCell() {
+        int cellID = 0;
+
+        if(this.y <= this.height/6) {
+            if(this.x <= this.width/2) {
+                cellID = 1;
+            }else{
+                cellID = 0;
+            }
+        }else if(this.y <= this.height/6*2) {
+            cellID = 2;
+        }else if(this.y <= this.height/6*3) {
+            cellID = 3;
+        }else if(this.y <= this.height/6*4) {
+            cellID = 4;
+        }else if(this.y <= this.height/6*5) {
+            cellID = 5;
+        }else if(this.y <= this.height) {
+            if(this.x <= this.width/2) {
+                cellID = 7;
+            }else{
+                cellID = 6;
+            }
+        }
+        return cellID;
     }
 
     public void updateLocation(int direction, int stepSize) {

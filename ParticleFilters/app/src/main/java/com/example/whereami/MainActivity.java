@@ -37,7 +37,8 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
     // UI Elements
     private Button up, left, right, down, reset, init, start;
-    private TextView textview_azimuth, textview_particle_count, textview_steps, textview_direction, textview_cell;
+    private TextView textview_azimuth, textview_particle_count, textview_steps, textview_direction;
+    private List<TextView> cellResults;
     ImageView canvasView;
     Bitmap blankBitmap;
 
@@ -115,11 +116,27 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         reset = (Button) findViewById(R.id.button_reset);
         init = (Button) findViewById(R.id.button_init);
         start = (Button) findViewById(R.id.button_start);
+
+        // TextViews
         textview_azimuth = (TextView) findViewById(R.id.textview_azimuth);
         textview_particle_count = (TextView) findViewById(R.id.textview_particle_count);
         textview_steps = (TextView) findViewById(R.id.textview_steps);
         textview_direction = (TextView) findViewById(R.id.textview_direction);
-        textview_cell = (TextView) findViewById(R.id.textview_cell);
+
+        cellResults = new ArrayList<>();
+        cellResults.add((TextView) findViewById(R.id.textview_cell_A));
+        cellResults.add((TextView) findViewById(R.id.textview_cell_B));
+        cellResults.add((TextView) findViewById(R.id.textview_cell_C));
+        cellResults.add((TextView) findViewById(R.id.textview_cell_D));
+        cellResults.add((TextView) findViewById(R.id.textview_cell_E));
+        cellResults.add((TextView) findViewById(R.id.textview_cell_F));
+        cellResults.add((TextView) findViewById(R.id.textview_cell_G));
+        cellResults.add((TextView) findViewById(R.id.textview_cell_H));
+
+        for(int i = 0; i < cellResults.size(); i++) {
+            cellResults.get(i).setText("Cell "+cellNames[i]+":\n0.1250");
+        }
+
         toggleButtons(false);
         up.setOnClickListener(this);
         down.setOnClickListener(this);
@@ -293,23 +310,23 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         @Override
         public void run() {
             try {
-                while(startFiltering) {
-                    int[] counts = cellCounts();
-                    int[] res = maxValue(counts);
 
-                    if(res[0] > 0.75*nParticles) {
-                        Message message = new Message();
-                        Bundle bundle = new Bundle();
-                        bundle.putString("cellName", cellNames[res[1]]);
-                        message.setData(bundle);
-                        currentCellHandler.sendMessage(message);
-                    }else{
-                        Message message = new Message();
-                        Bundle bundle = new Bundle();
-                        bundle.putString("cellName", "-");
-                        message.setData(bundle);
-                        currentCellHandler.sendMessage(message);
+                while(startFiltering) {
+                    float[] cellWeights = new float[]{0,0,0,0,0,0,0,0};
+
+                    for(Particle particle : particles) {
+                        int currentCell = particle.getCurrentCell();
+                        cellWeights[currentCell] += particle.getWeight();
                     }
+
+                    float[] weightRes = normalize(cellWeights);
+
+                    Message message = new Message();
+                    Bundle bundle = new Bundle();
+                    bundle.putFloatArray("weights",weightRes);
+                    message.setData(bundle);
+                    currentCellHandler.sendMessage(message);
+                    Thread.sleep(1000);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -321,58 +338,47 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         @Override
         public void handleMessage(Message message) {
             Bundle bundle = message.getData();
-            String key = bundle.getString("cellName");
-            textview_cell.setText("Cell:\n"+key);
+            float[] keys = bundle.getFloatArray("weights");
+
+            int maxValue = maxValue(keys);
+
+            for(int i = 0; i < keys.length; i++) {
+                if(i == maxValue) {
+                    cellResults.get(i).setBackgroundResource(R.drawable.cell_closed);
+                    cellResults.get(i).setTextColor(getResources().getColor(R.color.colorDark));
+                }else{
+                    cellResults.get(i).setBackgroundResource(R.drawable.cell_open);
+                    cellResults.get(i).setTextColor(getResources().getColor(R.color.colorLight));
+                }
+                cellResults.get(i).setText("Cell "+cellNames[i]+":\n"+String.format("%.4f",keys[i]));
+            }
         }
     };
 
-    public int[] maxValue(int[] array) {
-        int[] res = new int[]{0,0};
+    public int maxValue(float[] array) {
+        float max = 0;
+        int index = 0;
 
-        for(int i = 0; i < array.length; i++) {
-            if(array[i] > res[0]) {
-                res[0] = array[i];
-                res[1] = i;
+        for (int i = 0; i < array.length; i++) {
+            if (array[i] > max) {
+                max = array[i];
+                index = i;
             }
         }
 
-        return res;
+        return index;
     }
 
-    public int[] cellCounts() {
-        int[] counts = new int[8];
-
-        int width = getDisplaySize()[0];
-        int height = getDisplaySize()[1];
-
-        for(Particle particle : particles) {
-            float x = particle.getX();
-            float y = particle.getY();
-
-            if(y <= height/6) {
-                if(x <= width/2) {
-                    counts[1] += 1;
-                }else{
-                    counts[0] += 1;
-                }
-            }else if(y <= height/6*2) {
-                counts[2] += 1;
-            }else if(y <= height/6*3) {
-                counts[3] += 1;
-            }else if(y <= height/6*4) {
-                counts[4] += 1;
-            }else if(y <= height/6*5) {
-                counts[5] += 1;
-            }else if(y <= height) {
-                if(x <= width/2) {
-                    counts[7] += 1;
-                }else{
-                    counts[6] += 1;
-                }
-            }
+    public float[] normalize(float[] array) {
+        float sum = 0;
+        for(int i = 0; i < array.length; i++) {
+            sum += array[i];
+        }
+        for(int i = 0; i < array.length; i++) {
+            array[i] = array[i]/sum;
         }
 
-        return counts;
+        return array;
     }
 
     // Method that toggles the state of some of the buttons for a better user experience
@@ -453,6 +459,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
             if (!isCollision(particle.getShape())) {
                 particle.setCollided(false);
+                particle.lowerWeight();
             }
         }
     }
@@ -496,7 +503,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         for(int i = 0; i < nParticles; i++) {
             int x = (int) (Math.random()*width);
             int y = (int) (Math.random()*height);
-            Particle particle = new Particle(x,y,nParticles);
+            Particle particle = new Particle(x,y,nParticles,width,height);
             particles.add(particle);
             particle.getShape().draw(canvas);
         }
