@@ -24,4 +24,8 @@ public class CircularQueue<Double> extends LinkedList<Double> {
         }
         return sum;
     }
+
+    public double average(CircularQueue<java.lang.Double> queue) {
+        return queue.sum(queue)/queue.size();
+    }
 }
