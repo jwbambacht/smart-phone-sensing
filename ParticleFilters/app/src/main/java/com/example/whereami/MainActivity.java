@@ -56,6 +56,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
     private int stepSizeMultiplier;
     private int nParticles;
     private int numSteps;
+    private String[] cellNames;
 
     // Variables for orientation and filtering
     private boolean startFiltering;
@@ -73,8 +74,6 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
     private double azimuth, lastAzimuth;
 
     CircularQueue<Double> queue;
-
-    List<String> originalParticles;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -95,6 +94,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         anchorCount = 0;
         anchorGathered = false;
         anchor = 0;
+        cellNames = new String[]{"A","B","C","D","E","F","G","H"};
 
         queue = new CircularQueue<>(2);
 
@@ -171,7 +171,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
             if(startFiltering) {
                 if (Math.abs(azimuth-lastAzimuth) >= 30) {
                     lastAzimuth = azimuth;
-                    textview_azimuth.setText("Azimuth:\n" + lastAzimuth);
+                    textview_azimuth.setText("Azimuth:\n" + (int) lastAzimuth);
                 }
             }
         }
@@ -283,43 +283,41 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                 toggleButtons(true);
                 init.setEnabled(false);
 
-                Thread thread = new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-
-                        try {
-
-                            String[] cellNames = new String[]{"A","B","C","D","E","F","G","H"};
-                            boolean convergence = false;
-                            String cell = "";
-
-                            while(!convergence && startFiltering) {
-
-                                int[] counts = cellCounts();
-                                int[] res = maxValue(counts);
-
-                                if(res[0] > 0.5*nParticles) {
-                                    Message message = new Message();
-                                    Bundle bundle = new Bundle();
-                                    bundle.putString("cellName", cellNames[res[1]]);
-                                    message.setData(bundle);
-                                    handler.sendMessage(message);
-                                }
-                            }
-
-                            textview_cell.setText("Cell:\n"+cell);
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    }
-                });
-                thread.start();
+                currentCellThread.start();
                 break;
             }
         }
     }
 
-    private Handler handler = new Handler() {
+    private Thread currentCellThread = new Thread(new Runnable() {
+        @Override
+        public void run() {
+            try {
+                while(startFiltering) {
+                    int[] counts = cellCounts();
+                    int[] res = maxValue(counts);
+
+                    if(res[0] > 0.75*nParticles) {
+                        Message message = new Message();
+                        Bundle bundle = new Bundle();
+                        bundle.putString("cellName", cellNames[res[1]]);
+                        message.setData(bundle);
+                        currentCellHandler.sendMessage(message);
+                    }else{
+                        Message message = new Message();
+                        Bundle bundle = new Bundle();
+                        bundle.putString("cellName", "-");
+                        message.setData(bundle);
+                        currentCellHandler.sendMessage(message);
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    });
+
+    private Handler currentCellHandler = new Handler() {
         @Override
         public void handleMessage(Message message) {
             Bundle bundle = message.getData();
@@ -494,14 +492,11 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         int height = this.getDisplaySize()[1];
 
         List<Particle> particles = new ArrayList<>();
-        originalParticles = new ArrayList<>();
 
         for(int i = 0; i < nParticles; i++) {
             int x = (int) (Math.random()*width);
             int y = (int) (Math.random()*height);
             Particle particle = new Particle(x,y,nParticles);
-            originalParticles.add("p"+i);
-
             particles.add(particle);
             particle.getShape().draw(canvas);
         }
