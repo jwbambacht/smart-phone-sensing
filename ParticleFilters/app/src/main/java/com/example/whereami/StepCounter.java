@@ -16,6 +16,7 @@ public class StepCounter {
         this.listener = listener;
     }
 
+    // Method that counts a step if it satisfies the correct conditions. This is not a real step counter
     public void count(long timestamp, float[] acceleration) {
 
         // Add acceleration values to queue of previous acceleration values for each axis
@@ -38,17 +39,16 @@ public class StepCounter {
 
         // Determine combined velocity/movement over all axis with gravity subtracted.
         // Add the movement to queue and take the average velocity over all previous values.
-        double velocity = (normalizedAcceleration[0]*acceleration[0]+normalizedAcceleration[1]*acceleration[1]+normalizedAcceleration[2]*acceleration[2])-gravity;
-        velocityQueue.add(velocity);
+        velocityQueue.add((normalizedAcceleration[0]*acceleration[0]+normalizedAcceleration[1]*acceleration[1]+normalizedAcceleration[2]*acceleration[2])-gravity);
         double averageVelocity = velocityQueue.sum(velocityQueue);
 
         // Obtain sensitivity/threshold from preferences. Manually optimization required for best result.
         double threshold = listener.getSensitivity();
         double stepTime = listener.getStepTime();
 
-        // If the average velocity/movement is bigger than the defined threshold and the previous average velocity was smaller
-        // (meaning the phone accelerated in vertical position), and the threshold is bigger than a defined time taken
-        // for a step, a step is approved and the particles are moved. If not,
+        // Average velocity/movement must be bigger than the defined threshold and the previous average velocity must be smaller than the threshold.
+        // This means that the phone accelerated in some direction. The time to the previous step also should be at least some predefined value.
+        // If all these conditions satisfy a step is counted and the particles will move in the current direction.
         if(averageVelocity > threshold && previousVelocity <= threshold && (timestamp-previousTimestamp) >= stepTime) {
             int direction = listener.getDirection();
             listener.moveParticles(direction,true);

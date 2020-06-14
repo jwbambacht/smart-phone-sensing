@@ -25,6 +25,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import android.hardware.Sensor;
@@ -186,7 +188,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
             // If start button is pressed we detect a change in azimuth if the difference is big enough to compensate for sensitivity
             if(startFiltering) {
-                if (Math.abs(azimuth-lastAzimuth) >= 30) {
+                if (Math.abs(azimuth-lastAzimuth) >= 15) {
                     lastAzimuth = azimuth;
                     textview_azimuth.setText("Azimuth:\n" + (int) lastAzimuth);
                 }
@@ -412,32 +414,31 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
     }
 
     public void moveParticles(int direction) {
-
         for(int i = 0; i < stepSizeMultiplier; i++) {
+
             for (Particle particle : particles) {
                 particle.updateLocation(direction, stepSize);
 
-                if(isCollision(particle.getShape())) {
+                if (isCollision(particle.getShape())) {
                     particle.setCollided(true);
                     resampleParticle(particle);
                 }
             }
 
-            canvas.drawColor(ContextCompat.getColor(this, R.color.colorDark));
-            for(Particle particle : particles) {
+            canvas.drawColor(ContextCompat.getColor(MainActivity.this, R.color.colorDark));
+            canvas.save();
+            for (Particle particle : particles) {
                 particle.getShape().draw(canvas);
             }
-            for(ShapeDrawable wall : walls) {
+            for (ShapeDrawable wall : walls) {
                 wall.draw(canvas);
             }
 
-            textview_particle_count.setText("Particles:\n"+particles.size());
+            canvasView.invalidate();
         }
-
-        canvasView.invalidate(); //redraw canvas
     }
 
-    // Method that resample a collided particle. It randomnly chooses another particle and takes its current location.
+    // Method that resample a collided particle. It randomly chooses another particle and takes its current location.
     // Resamples based on more random numbers. If collided with a wall, the process repeats until not collided.
     public void resampleParticle(Particle particle) {
         while(particle.getCollided()) {
@@ -457,7 +458,6 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
     // Method that prepares the canvas with particles and layout
     public void prepareCanvas() {
-        // create a canvas
         canvasView = (ImageView) findViewById(R.id.canvas);
         blankBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         canvas = new Canvas(blankBitmap);
@@ -467,7 +467,6 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         particles = this.createParticles();
         walls = this.createLayout();
 
-        // draw the objects
         for (ShapeDrawable wall : walls) {
             wall.draw(canvas);
         }
@@ -564,7 +563,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
     public List<ShapeDrawable> createLayout() {
         List<ShapeDrawable> walls = new ArrayList<>();
 
-        int wallThickness = 2;
+        int wallThickness = 3;
 
         if(layout.equals("Joost")) {
             // Top boundary
