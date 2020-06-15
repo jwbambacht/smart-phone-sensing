@@ -51,9 +51,9 @@ public class Particle {
     public void lowerWeight() { this.weight = this.weight/2; }
 
     public void resample(int x, int y) {
-        int[] offPlacement = new int[]{-1,0,1};
-        int randomXOffPlacement = offPlacement[(int) (Math.random() * offPlacement.length)];
-        int randomYOffPlacement = offPlacement[(int) (Math.random() * offPlacement.length)];
+        int[] offPlacement = new int[]{-5,0,5};
+        int randomXOffPlacement = (int) (Math.random() * 100) - 50;
+        int randomYOffPlacement = (int) (Math.random() * 100) - 50;
 
         this.x = x+randomXOffPlacement;
         this.y = y+randomYOffPlacement;
