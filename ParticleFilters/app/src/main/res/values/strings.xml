@@ -63,6 +63,8 @@
     </string-array>
 
     <string-array name="particles_array">
+        <item>5</item>
+        <item>100</item>
         <item>1000</item>
         <item>1500</item>
         <item>2000</item>
