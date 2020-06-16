@@ -34,6 +34,32 @@ public class Util  extends AppCompatActivity {
         database.execSQL("CREATE TABLE IF NOT EXISTS networks (ID INTEGER PRIMARY KEY AUTOINCREMENT, BSSID VARCHAR(40), SSID VARCHAR(40), RSSI INTEGER, cellID INTEGER, type VARCHAR(10), scanID INTEGER)");
     }
 
+    // Method that obtains probabilities for a given AP and RSSI
+    static double[] getProbabilities(SQLiteDatabase database, String BSSID, int RSSI) {
+        double[] probs = new double[8];
+
+        for(int cellID = 0; cellID < 8; cellID++) {
+            try{
+                Cursor cellCursor = database.rawQuery("SELECT * FROM networks WHERE BSSID = ? AND cellID = ?", new String[]{BSSID,""+cellID});
+
+                cellCursor.moveToFirst();
+
+                List<Integer> samples = new ArrayList<>();
+
+                while(cellCursor.moveToNext()) {
+                    samples.add(Math.abs(cellCursor.getInt(cellCursor.getColumnIndex("RSSI"))));
+                }
+
+                probs[cellID] = Util.gaussianKernelProbability(RSSI, samples);
+                cellCursor.close();
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }
+
+        return probs;
+    }
+
     // Method that removes all saved samples and initiates re-creation of database
     static void resetSamples(SQLiteDatabase database) {
         try {
@@ -117,51 +143,6 @@ public class Util  extends AppCompatActivity {
         return true;
     }
 
-    // Method that imports the processed data
-    static HashMap<String,Network> readData(Context context) {
-        InputStream input = context.getResources().openRawResource(R.raw.data_to_phone_app2);
-
-        BufferedReader reader = new BufferedReader(new InputStreamReader(input, Charset.forName("UTF-8")));
-        String line = "";
-
-        HashMap<String, Network> networks = new HashMap<String,Network>();
-
-        try {
-            while ((line = reader.readLine()) != null) {
-                // Split the line into different tokens (using the comma as a separator).
-                String[] tokens = line.split(",");
-
-                Network network;
-
-                String BSSID = tokens[0];
-                int cellID = Integer.parseInt(tokens[1]);
-                BigDecimal[] probabilities = new BigDecimal[100];
-
-                for(int i = 0; i < 100; i++) {
-                    probabilities[i] = new BigDecimal(tokens[i+2]);
-                }
-
-                if(cellID == 0) {
-                    network = new Network(BSSID);
-                }else{
-                    network = networks.get(BSSID);
-                }
-
-                network.setCellProbabilities(cellID,probabilities);
-
-                networks.put(BSSID,network);
-
-                Log.i("Added "+BSSID+" to list, cell "+cellID,"");
-                Log.i("Probabilities",Arrays.toString(probabilities));
-            }
-        } catch (IOException e1) {
-            Log.e("Error reading csv", "Error" + line, e1);
-            e1.printStackTrace();
-        }
-
-        return networks;
-    }
-
     // Method that finds the number of samples per cell in the database
     static int getTrainingCount(SQLiteDatabase database, int cellID) {
         int count = 0;
@@ -206,16 +187,42 @@ public class Util  extends AppCompatActivity {
         }
     }
 
+    // Method that determines all BSSIDs that are included in the probabilities table
+    static List<String> getNetworkNames(SQLiteDatabase database) {
+        List<String> networks = new ArrayList<>();
+
+        Cursor cursor = database.rawQuery("SELECT DISTINCT BSSID from networks",null);
+
+        while(cursor.moveToNext()) {
+            networks.add(cursor.getString(cursor.getColumnIndex("BSSID")));
+        }
+
+        return networks;
+    }
+
     // Method that determines the location by use of Bayes
-    static BigDecimal[] BayesianLocalization(BigDecimal[] prior, WifiManager wifiManager, HashMap<String,Network> networks) {
+    static double[] BayesianLocalization(SQLiteDatabase database, double[] prior, WifiManager wifiManager, List<String> networkNames) {
 
         wifiManager.startScan();
+
+        // Temporary AP names that should not be included in the result
+        String[] filter_names = new String[]{"AndroidAP","iPhone", "Nokia", "OnePlus", "HUAWEI", "LG"};
 
         // Include scanned APs only if the BSSID is also in the list of processed networks
         // Use the absolute value for RSSI to be able to simply take the RSSI value as index
         List<ResultScan> resultScans = new ArrayList<>();
         for(ScanResult scanResult : wifiManager.getScanResults()) {
-            if(networks.containsKey(scanResult.BSSID)) {
+
+            // Do not process temporary APs, based on general AP names of Android, iOS, and other vendors
+            boolean include = true;
+            for(String name : filter_names) {
+                if (scanResult.SSID.contains(name)) {
+                    include = false;
+                    break;
+                }
+            }
+
+            if(networkNames.contains(scanResult.BSSID) && include) {
                 resultScans.add(new ResultScan(scanResult.BSSID,Math.abs(scanResult.level)));
             }
         }
@@ -224,25 +231,33 @@ public class Util  extends AppCompatActivity {
         Collections.sort(resultScans);
 
         // Create posterior
-        BigDecimal[] posterior = new BigDecimal[8];
+        double[] posterior = new double[8];
 
         // For each sense scan only include the APs that have an RSSI of 75 or lower
         int index = 0;
-        while(resultScans.get(index).getRSSI() <= 75 && index < resultScans.size()-1 && index < 4) {
+//        while(resultScans.get(index).getRSSI() <= 75 && index < resultScans.size()-1 && index < 4) {
+//        for(ResultScan result : resultScans) {
+        while(index < resultScans.size()-1) {
             ResultScan result = resultScans.get(index);
             String BSSID = result.getBSSID();
-            int RSSI = result.getRSSI();
-            BigDecimal norm_sum = new BigDecimal(0);
 
-            BigDecimal[] probs = networks.get(BSSID).getProbabilitiesForRSSI(RSSI);
+            int RSSI = result.getRSSI();
+            double norm_sum = 0;
+
+//            double[] probs = networks.get(BSSID).getProbabilitiesForRSSI(RSSI);
+
+            System.out.println("BSSID: "+BSSID+", RSSI:" +RSSI);
+            double[] probs = Util.getProbabilities(database,BSSID,RSSI);
+
+            System.out.println(Arrays.toString(probs));
 
             // Normalize posterior
             for(int j = 0; j < 8; j++) {
-                posterior[j] = prior[j].multiply(probs[j]);
-                norm_sum = norm_sum.add(posterior[j]);
+                posterior[j] = prior[j]*probs[j];
+                norm_sum += posterior[j];
             }
             for(int j = 0; j < 8; j++) {
-                posterior[j] = posterior[j].divide(norm_sum, 300, RoundingMode.CEILING);
+                posterior[j] = posterior[j]/norm_sum;
             }
 
             prior = posterior;
@@ -252,25 +267,10 @@ public class Util  extends AppCompatActivity {
         return posterior;
     };
 
-    // Method to find index of maximum value in BigDecimal array
-    static int findMaxBigDecimal(BigDecimal[] results) {
+    // Method to find index of maximum value in double array
+    static int findMaxValue(double[] results) {
         int index = 0;
-        BigDecimal max = results[0];
-
-        for(int i = 1; i < results.length; i++) {
-            if(results[i].compareTo(max) > 0) {
-                max = results[i];
-                index = i;
-            }
-        }
-
-        return index;
-    }
-
-    // Method to find index of maximum value in float array
-    static int findMaxValue(float[] results) {
-        int index = 0;
-        float max = results[0];
+        double max = results[0];
 
         for(int i = 1; i < results.length; i++) {
             if(results[i] > max) {
@@ -281,6 +281,49 @@ public class Util  extends AppCompatActivity {
 
         return index;
     }
+
+    static double sum(List<Integer> samples) {
+        double sum = 0;
+
+        for(Integer sample : samples) {
+            sum += sample;
+        }
+
+        return sum;
+    }
+
+    static double standardDeviation(List<Integer> samples) {
+
+        double mean = Util.sum(samples)/samples.size();
+        double variance = 0;
+
+        for(Integer sample : samples) {
+            variance += Math.pow(mean-sample,2);
+        }
+
+        return Math.sqrt(variance/samples.size());
+    }
+
+    static double gaussianKernel(double x) {
+        return 1/Math.sqrt(2*Math.PI)*Math.exp((-Math.pow(x,2))/2);
+    }
+
+    static double gaussianKernelProbability(int x, List<Integer> samples) {
+        int size = samples.size();
+        double std = standardDeviation(samples);
+        double bandwidth = Math.pow((4*Math.pow(std,5)/(3*size)),0.2);
+
+        double sum = 0;
+
+        for(Integer sample : samples) {
+            double kernelVariable = (sample-x)/bandwidth;
+            sum += gaussianKernel(kernelVariable);
+        }
+
+        return sum/(size*bandwidth);
+    }
+
+
 
 
 }

@@ -5,7 +5,10 @@
     <string name="button_sense_title">SENSE</string>
     <string name="button_sense_reset">RESET SENSE RESULTS</string>
     <string name="button_export_samples">EXPORT SAMPLES TO SD CARD</string>
+    <string name="button_process_samples">PROCESS SAMPLES FOR TESTING</string>
+    <string name="button_probabilities_text">CALCULATE CELL PROBABILITIES</string>
     <string name="button_reset_title">RESET SAMPLES</string>
+    <string name="button_reset_testing_title">RESET PROCESSED NETWORKS</string>
     <string name="button_save_title">SAVE</string>
     <string name="button_back_title">BACK</string>
     <string name="button_training_submit">Start Training Cell</string>
@@ -41,6 +44,11 @@
     <string name="confirm_reset_training_text">Samples successfully removed!</string>
     <string name="confirm_save_settings_text">Settings successfully saved!</string>
     <string name="confirm_wifi_receiver_completed">WiFi Receiver completed</string>
+    <string name="confirm_start_process_text">Starting processing networks!</string>
+    <string name="confirm_process_text">All networks are processed and ready for testing!</string>
+    <string name="confirm_reset_process_text">Processed networks are reset!</string>
+    <string name="confirm_start_probabilities_text">Starting calculating probabilties</string>
+    <string name="confirm_probabilities_text">Calculating probabilties done!</string>
 
     <string name="view_home_title">BayesianLocalization</string>
     <string name="view_training_title">Training</string>

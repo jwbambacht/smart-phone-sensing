@@ -23,6 +23,7 @@ import android.widget.GridLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,8 +36,8 @@ public class MainActivity extends AppCompatActivity {
     WifiReceiver receiverWifi;
     SQLiteDatabase db;
     GridLayout leftGridLayout;
-    HashMap<String,Network> networks;
-    BigDecimal[] prior, posterior;
+    List<String> networkNames;
+    double[] prior, posterior;
     boolean sensingFinished;
     TextView senseLabel;
     Button sense;
@@ -62,13 +63,14 @@ public class MainActivity extends AppCompatActivity {
         db = openOrCreateDatabase("database.db", MODE_PRIVATE, null);
         Util.createDatabases(db);
 
+        networkNames = Util.getNetworkNames(db);
+
         wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         if (!wifiManager.isWifiEnabled()) {
             Toast.makeText(getApplicationContext(), "Turning WiFi ON...", Toast.LENGTH_LONG).show();
             wifiManager.setWifiEnabled(true);
         }
 
-        networks = Util.readData(this);
         senseLabel = (TextView) findViewById(R.id.textview_label_sense);
         leftGridLayout = (GridLayout) findViewById(R.id.gridlayout_left_cells);
         String[] cells = this.getResources().getStringArray(R.array.cell_array);
@@ -103,12 +105,11 @@ public class MainActivity extends AppCompatActivity {
                             resetSensing();
                         }
 
-                        posterior = Util.BayesianLocalization(prior, wifiManager, networks);
+                        System.out.println("PRIOR: "+Arrays.toString(prior));
+                        posterior = Util.BayesianLocalization(db,prior, wifiManager, networkNames);
 
                         // When user chooses to sense networks the posterior is used to see if a cell has a high localization probability
-                        // If this is the case
-                        if (posterior[Util.findMaxBigDecimal(posterior)].compareTo(new BigDecimal(0.95)) >= 0) {
-                            Arrays.fill(prior, new BigDecimal(0.125));
+                        if (posterior[Util.findMaxValue(posterior)] >= 0.95) {
                             senseLabel.setText(getResources().getString(R.string.textview_sense_results));
                             sense.setText(getResources().getString(R.string.button_sense_reset));
                             sensingFinished = true;
@@ -125,13 +126,13 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    public void createCellGrid(GridLayout gridLayout, String[] cellNames, BigDecimal[] results) {
+    public void createCellGrid(GridLayout gridLayout, String[] cellNames, double[] results) {
         gridLayout.removeAllViews();
 
-        float [] results_formatted = new float[8];
+        double [] results_formatted = new double[8];
 
         for(int i = 0; i < results.length; i++) {
-            results_formatted[i] = results[i].setScale(4,BigDecimal.ROUND_HALF_UP).floatValue();
+            results_formatted[i] = results[i];
         }
 
         Log.i("RESULTS:",Arrays.toString(results_formatted));
@@ -185,6 +186,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        networkNames = Util.getNetworkNames(db);
         leftGridLayout.removeAllViews();
         resetSensing();
     }
@@ -192,6 +194,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPostResume() {
         super.onPostResume();
+        networkNames = Util.getNetworkNames(db);
         receiverWifi = new WifiReceiver(wifiManager);
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
@@ -200,8 +203,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
      void resetSensing() {
-        prior = new BigDecimal[8];
-        Arrays.fill(prior, new BigDecimal(0.125));
+        prior = new double[8];
+        Arrays.fill(prior, 0.125);
         sensingFinished = false;
         senseLabel.setText(getResources().getString(R.string.textview_sense_to_see));
      }
