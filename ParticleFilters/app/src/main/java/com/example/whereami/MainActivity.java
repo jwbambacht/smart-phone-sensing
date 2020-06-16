@@ -90,7 +90,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         getSettings();
 
         // Set variables
-        stepSize = 5;
+        stepSize = 7;
         numSteps = 0;
         startFiltering = false;
         initializeOrientation = false;
@@ -159,18 +159,13 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         public void onSensorChanged(SensorEvent event) {
 
             float[] rotationMatrix = new float[16];
-            float[] remappedRotationMatrix = new float[16];
-            float[] orientations = new float[3];
 
             // Convert quaternion into a rotation matrix
-            // Remap coordinate system of the rotation matrix
-            // Convert the rotation matrix into an array of orientations, specifying the rotation of the device along the Z, X, and Y axes
-            // Convert horizontal orientation to degrees
+            // Instead of remapping the rotation matrix and obtain the orientation from that we take the arctan of two values, giving the rotation in the z-axis.
+            // We convert the rotation to degrees and take the modulo of 360 to obtain degrees aranging from 0 to 360.
+            // Pitch and roll could also be determined this way but we are only interested in the orientation.
             SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values);
-            SensorManager.remapCoordinateSystem(rotationMatrix, SensorManager.AXIS_X, SensorManager.AXIS_Z, remappedRotationMatrix);
-            SensorManager.getOrientation(remappedRotationMatrix, orientations);
-            orientations[0] = (float)(Math.toDegrees(orientations[0]));
-            azimuth = (double) (orientations[0] + 360 ) % 360;
+            azimuth = (double) ((float) Math.toDegrees((float) Math.atan2(rotationMatrix[1],rotationMatrix[5]))+360) % 360;
 
             // Add azimuth to queue to be able to detect direction changes without counting a step
             queue.add(azimuth);
@@ -179,6 +174,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
             if(initializeOrientation && !anchorGathered && anchorCount < 5) {
                 anchor += (int) azimuth;
                 anchorCount++;
+
                 if(anchorCount == 5) {
                     initializeOrientation = false;
                     anchorGathered = true;
@@ -188,11 +184,11 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
             // If start button is pressed we detect a change in azimuth if the difference is big enough to compensate for sensitivity
             if(startFiltering) {
-                if (Math.abs(azimuth-lastAzimuth) >= 15) {
+                if(Math.min((int)(((azimuth-lastAzimuth)%360)+360)%360,(int) (((lastAzimuth-azimuth)%360)+360)%360) >= 50) {
                     lastAzimuth = azimuth;
-                    textview_azimuth.setText("Azimuth:\n" + (int) lastAzimuth);
                 }
             }
+            textview_azimuth.setText("Azimuth:\n" + (int) azimuth);
         }
     };
 
@@ -204,7 +200,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
             // To account for changes in direction (90 degrees) we only allow a step to be included if the (absolute) rotation is smaller than 30 degrees
             if(startFiltering) {
-                if(Math.abs(queue.getLast()-queue.getFirst()) < 30) {
+                if(Math.min((int)(((queue.getLast()-queue.sum(queue)/queue.size())%360)+360)%360,(int) (((queue.sum(queue)/queue.size()-queue.getLast())%360)+360)%360) < 60) {
                     stepCounter.count(TimeUnit.SECONDS.convert(event.timestamp, TimeUnit.NANOSECONDS), event.values);
                 }
             }
@@ -360,8 +356,6 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         }
     };
 
-
-
     // Method that toggles the state of some of the buttons for a better user experience
     public void toggleButtons(boolean onoff) {
         up.setEnabled(onoff);
@@ -380,9 +374,6 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
         if(layout.equals("Joost")) {
             sizes[0] = size.x * 9 / 16;
-            sizes[1] = size.y;
-        }else{
-            sizes[0] = size.x;
             sizes[1] = size.y;
         }
 
@@ -563,7 +554,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
     public List<ShapeDrawable> createLayout() {
         List<ShapeDrawable> walls = new ArrayList<>();
 
-        int wallThickness = 3;
+        int wallThickness = 5;
 
         if(layout.equals("Joost")) {
             // Top boundary
@@ -625,12 +616,8 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
             cccBoundary.setBounds(width / 2 - wallThickness, height / 6 * 2 - 10, width / 2 + wallThickness, height / 6 * 2);
             cccBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorMuted));
             walls.add(cccBoundary);
-            ShapeDrawable cctoiletBoundary = new ShapeDrawable(new RectShape());
-            cctoiletBoundary.setBounds(width / 2 + 105, height / 6, width - wallThickness, height / 6 + 75);
-            cctoiletBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorMuted));
-            walls.add(cctoiletBoundary);
             ShapeDrawable ccoBoundary = new ShapeDrawable(new RectShape());
-            ccoBoundary.setBounds(width / 2 + 105, height / 6+150, width - wallThickness, height / 6 * 3 + 20);
+            ccoBoundary.setBounds(width / 2 + 95, height / 6, width - wallThickness, height / 6 * 3 + 50);
             ccoBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorMuted));
             walls.add(ccoBoundary);
             ShapeDrawable ccooBoundary = new ShapeDrawable(new RectShape());
@@ -652,23 +639,23 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
             // Walls EF-OUT
             ShapeDrawable eobBoundary = new ShapeDrawable(new RectShape());
-            eobBoundary.setBounds(0, height / 6 * 3 - wallThickness, 90, height / 6 * 5 + wallThickness);
+            eobBoundary.setBounds(0, height / 6 * 3 - wallThickness, 80, height / 6 * 5 + wallThickness);
             eobBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorMuted));
             walls.add(eobBoundary);
             ShapeDrawable eotBoundary = new ShapeDrawable(new RectShape());
-            eotBoundary.setBounds(width - 65, height / 6 * 3 + 20, width - wallThickness, height / 6 * 5 + wallThickness);
+            eotBoundary.setBounds(width - 50, height / 6 * 3 + 20, width - wallThickness, height / 6 * 5 + wallThickness);
             eotBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorMuted));
             walls.add(eotBoundary);
 
             // Dinner Table
             ShapeDrawable tableBoundary = new ShapeDrawable(new RectShape());
-            tableBoundary.setBounds(width/2-85, height / 6 * 4 - 65, width/2-45, height / 6 * 4 + 65);
+            tableBoundary.setBounds(width/2-95, height / 6 * 4 - 65, width/2-45, height / 6 * 4 + 65);
             tableBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorLight));
             walls.add(tableBoundary);
 
             // Kitchen Island
             ShapeDrawable kitchenBoundary = new ShapeDrawable(new RectShape());
-            kitchenBoundary.setBounds(width/2+50, height / 6 * 4 - 80, width/2+95, height / 6 * 4 + 80);
+            kitchenBoundary.setBounds(width/2+50, height / 6 * 4 - 75, width/2+100, height / 6 * 4 + 75);
             kitchenBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorLight));
             walls.add(kitchenBoundary);
 
@@ -727,8 +714,6 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
             sofaBoundary.setBounds(width/2-90, height/6*5-65, width/2-30, height / 6 * 5);
             sofaBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorLight));
             walls.add(sofaBoundary);
-        }else{
-
         }
 
         return walls;
