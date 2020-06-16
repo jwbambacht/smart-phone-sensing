@@ -51,9 +51,9 @@ public class Particle {
     public void lowerWeight() { this.weight = this.weight/2; }
 
     public void resample(int x, int y) {
-        int[] offPlacement = new int[]{-1,0,1};
-        int randomXOffPlacement = offPlacement[(int) (Math.random() * offPlacement.length)];
-        int randomYOffPlacement = offPlacement[(int) (Math.random() * offPlacement.length)];
+        int offPlacement = 3;
+        int randomXOffPlacement = (int) (Math.random() * offPlacement * 2) - offPlacement;
+        int randomYOffPlacement = (int) (Math.random() * offPlacement * 2) - offPlacement;
 
         this.x = x+randomXOffPlacement;
         this.y = y+randomYOffPlacement;
@@ -64,11 +64,13 @@ public class Particle {
     public int getCurrentCell() {
         int cellID = 0;
 
-        if(this.y <= this.height/6) {
-            if(this.x <= this.width/2) {
+        if(this.y >= 0 && this.y <= this.height/6) {
+            if(this.x >= 0 && this.x <= this.width/2) {
                 cellID = 1;
-            }else{
+            }else if(this.x <= width){
                 cellID = 0;
+            }else{
+                System.out.println("OFF GRID");
             }
         }else if(this.y <= this.height/6*2) {
             cellID = 2;
@@ -79,11 +81,15 @@ public class Particle {
         }else if(this.y <= this.height/6*5) {
             cellID = 5;
         }else if(this.y <= this.height) {
-            if(this.x <= this.width/2) {
+            if(this.x >= 0 && this.x <= this.width/2) {
                 cellID = 7;
-            }else{
+            }else if(this.x <= width){
                 cellID = 6;
+            }else{
+                System.out.println("OFF GRID");
             }
+        }else{
+            System.out.println("OFF GRID");
         }
         return cellID;
     }
