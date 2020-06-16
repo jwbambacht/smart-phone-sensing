@@ -41,7 +41,6 @@ public class Util  extends AppCompatActivity {
         for(int cellID = 0; cellID < 8; cellID++) {
             try{
                 Cursor cellCursor = database.rawQuery("SELECT * FROM networks WHERE BSSID = ? AND cellID = ?", new String[]{BSSID,""+cellID});
-
                 cellCursor.moveToFirst();
 
                 List<Integer> samples = new ArrayList<>();
@@ -51,6 +50,11 @@ public class Util  extends AppCompatActivity {
                 }
 
                 probs[cellID] = Util.gaussianKernelProbability(RSSI, samples);
+
+                if(Double.isNaN(probs[cellID])){
+                    probs[cellID] = Double.MIN_VALUE;
+                }
+
                 cellCursor.close();
             } catch (Exception ex) {
                 ex.printStackTrace();
@@ -168,8 +172,25 @@ public class Util  extends AppCompatActivity {
 
         wifiManager.startScan();
 
+        // Temporary AP names that should not be included in the result
+        String[] filter_names = new String[]{"AndroidAP","iPhone", "Nokia", "OnePlus", "HUAWEI", "LG"};
+
         // Sense networks and add to database
         for (ScanResult scan : wifiManager.getScanResults()) {
+
+            // Do not process temporary APs, based on general AP names of Android, iOS, and other vendors
+            boolean excluded = true;
+            for(String name : filter_names) {
+                if (scan.SSID.contains(name)) {
+                    excluded = false;
+                    break;
+                }
+            }
+
+            if(excluded) {
+                break;
+            }
+
             ContentValues networkRow = new ContentValues();
             networkRow.put("BSSID", scan.BSSID);
             networkRow.put("SSID", scan.SSID);
@@ -205,24 +226,12 @@ public class Util  extends AppCompatActivity {
 
         wifiManager.startScan();
 
-        // Temporary AP names that should not be included in the result
-        String[] filter_names = new String[]{"AndroidAP","iPhone", "Nokia", "OnePlus", "HUAWEI", "LG"};
-
         // Include scanned APs only if the BSSID is also in the list of processed networks
         // Use the absolute value for RSSI to be able to simply take the RSSI value as index
         List<ResultScan> resultScans = new ArrayList<>();
         for(ScanResult scanResult : wifiManager.getScanResults()) {
 
-            // Do not process temporary APs, based on general AP names of Android, iOS, and other vendors
-            boolean include = true;
-            for(String name : filter_names) {
-                if (scanResult.SSID.contains(name)) {
-                    include = false;
-                    break;
-                }
-            }
-
-            if(networkNames.contains(scanResult.BSSID) && include) {
+            if(networkNames.contains(scanResult.BSSID)) {
                 resultScans.add(new ResultScan(scanResult.BSSID,Math.abs(scanResult.level)));
             }
         }
@@ -230,28 +239,22 @@ public class Util  extends AppCompatActivity {
         // Sort scanned APs on best (lowest) positive RSSI
         Collections.sort(resultScans);
 
-        // Create posterior
+        // Create posterior and for each scan we are going to calculate the probabilities and posterior
         double[] posterior = new double[8];
 
-        // For each sense scan only include the APs that have an RSSI of 75 or lower
-        int index = 0;
-//        while(resultScans.get(index).getRSSI() <= 75 && index < resultScans.size()-1 && index < 4) {
-//        for(ResultScan result : resultScans) {
-        while(index < resultScans.size()-1) {
-            ResultScan result = resultScans.get(index);
+        for(int i = 0; i < resultScans.size(); i++) {
+            ResultScan result = resultScans.get(i);
             String BSSID = result.getBSSID();
 
             int RSSI = result.getRSSI();
             double norm_sum = 0;
-
-//            double[] probs = networks.get(BSSID).getProbabilitiesForRSSI(RSSI);
 
             System.out.println("BSSID: "+BSSID+", RSSI:" +RSSI);
             double[] probs = Util.getProbabilities(database,BSSID,RSSI);
 
             System.out.println(Arrays.toString(probs));
 
-            // Normalize posterior
+            // Calculate and Normalize posterior
             for(int j = 0; j < 8; j++) {
                 posterior[j] = prior[j]*probs[j];
                 norm_sum += posterior[j];
@@ -261,7 +264,6 @@ public class Util  extends AppCompatActivity {
             }
 
             prior = posterior;
-            index++;
         }
 
         return posterior;
@@ -282,6 +284,7 @@ public class Util  extends AppCompatActivity {
         return index;
     }
 
+    // Method that calculates the sum of list of integers
     static double sum(List<Integer> samples) {
         double sum = 0;
 
@@ -292,6 +295,7 @@ public class Util  extends AppCompatActivity {
         return sum;
     }
 
+    // Method that calculates the standard deviation of a list of samples
     static double standardDeviation(List<Integer> samples) {
 
         double mean = Util.sum(samples)/samples.size();
@@ -304,10 +308,13 @@ public class Util  extends AppCompatActivity {
         return Math.sqrt(variance/samples.size());
     }
 
+    // Method that calculates a Gaussian Kernel at a given value x
     static double gaussianKernel(double x) {
         return 1/Math.sqrt(2*Math.PI)*Math.exp((-Math.pow(x,2))/2);
     }
 
+    // Method that calculates the Gaussian Kernel Density Estimator, with std as the standard deviation of the sample values,
+    // bandwidth is estimated to be approximately (4(std)^5/(3n))^(1/5)
     static double gaussianKernelProbability(int x, List<Integer> samples) {
         int size = samples.size();
         double std = standardDeviation(samples);
@@ -322,8 +329,4 @@ public class Util  extends AppCompatActivity {
 
         return sum/(size*bandwidth);
     }
-
-
-
-
 }
