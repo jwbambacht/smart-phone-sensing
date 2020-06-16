@@ -78,6 +78,8 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
     CircularQueue<Double> queue;
 
+    ExecutorService executorService = Executors.newFixedThreadPool(1);
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -90,7 +92,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         getSettings();
 
         // Set variables
-        stepSize = 7;
+        stepSize = 5;
         numSteps = 0;
         startFiltering = false;
         initializeOrientation = false;
@@ -244,9 +246,19 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_settings:
-                Intent i = new Intent(this, SettingsActivity.class);
-                this.startActivity(i);
-                return true;
+                startFiltering = false;
+
+                try {
+                    if (executorService.awaitTermination(0, TimeUnit.SECONDS)) {
+                        Intent i = new Intent(this, SettingsActivity.class);
+                        this.startActivity(i);
+                        return true;
+                    } else {
+                        executorService.shutdown();
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             default:
                 return super.onOptionsItemSelected(item);
         }
@@ -274,16 +286,26 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
             }
             case R.id.button_reset: {
                 startFiltering = false;
-                initializeOrientation = false;
-                anchorGathered = false;
-                anchorVector = new int[5];
-                anchor = 0;
-                numSteps = 0;
 
-                toggleButtons(false);
-                init.setEnabled(true);
+                try {
+                    if(executorService.awaitTermination(0,TimeUnit.SECONDS)) {
 
-                this.prepareCanvas();
+                        initializeOrientation = false;
+                        anchorGathered = false;
+                        anchorVector = new int[5];
+                        anchor = 0;
+                        numSteps = 0;
+
+                        toggleButtons(false);
+                        init.setEnabled(true);
+
+                        this.prepareCanvas();
+                    }else{
+                        executorService.shutdown();
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
                 break;
             }
             case R.id.button_init: {
@@ -299,6 +321,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                 init.setEnabled(false);
                 start.setEnabled(false);
 
+                executorService = Executors.newFixedThreadPool(1);
                 currentCellThread.start();
                 break;
             }
@@ -405,29 +428,44 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
     }
 
     public void moveParticles(int direction) {
-        for(int i = 0; i < stepSizeMultiplier; i++) {
 
-            for (Particle particle : particles) {
-                particle.updateLocation(direction, stepSize);
+        executorService.execute(new Runnable() {
+            @Override
+            public void run() {
+                for (int i = 0; i < stepSizeMultiplier; i++) {
+                    for (Particle particle : particles) {
+                        particle.updateLocation(direction, stepSize);
 
-                if (isCollision(particle.getShape())) {
-                    particle.setCollided(true);
-                    resampleParticle(particle);
+                        if (isCollision(particle.getShape())) {
+                            particle.setCollided(true);
+                            resampleParticle(particle);
+                        }
+                    }
+
+                    canvas.drawColor(ContextCompat.getColor(MainActivity.this, R.color.colorDark));
+                    for (Particle particle : particles) {
+                        particle.getShape().draw(canvas);
+                    }
+
+                    for (ShapeDrawable wall : walls) {
+                        wall.draw(canvas);
+                    }
+
+                    moveHandler.sendMessage(new Message());
                 }
             }
+        });
+    }
 
-            canvas.drawColor(ContextCompat.getColor(MainActivity.this, R.color.colorDark));
-            canvas.save();
-            for (Particle particle : particles) {
-                particle.getShape().draw(canvas);
-            }
-            for (ShapeDrawable wall : walls) {
-                wall.draw(canvas);
-            }
-
+    // Handler that returns the weights to the textviews
+    private Handler moveHandler = new Handler() {
+        @Override
+        public void handleMessage(Message message) {
             canvasView.invalidate();
         }
-    }
+    };
+
+
 
     // Method that resample a collided particle. It randomly chooses another particle and takes its current location.
     // Resamples based on more random numbers. If collided with a wall, the process repeats until not collided.
