@@ -289,7 +289,6 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
                 try {
                     if(executorService.awaitTermination(0,TimeUnit.SECONDS)) {
-
                         initializeOrientation = false;
                         anchorGathered = false;
                         anchorVector = new int[5];
@@ -306,6 +305,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
+                reset.setText("RESET");
                 break;
             }
             case R.id.button_init: {
@@ -320,7 +320,8 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                 toggleButtons(true);
                 init.setEnabled(false);
                 start.setEnabled(false);
-
+                reset.setText("STOP");
+                
                 executorService = Executors.newFixedThreadPool(1);
                 currentCellThread.start();
                 break;

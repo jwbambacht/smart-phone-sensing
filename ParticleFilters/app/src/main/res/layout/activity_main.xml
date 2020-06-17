@@ -87,7 +87,7 @@
             android:layout_alignParentLeft="true"
             android:layout_alignParentBottom="true"
             android:textSize="10sp"
-            android:text="Reset" />
+            android:text="Stop" />
 
         <TextView
             android:id="@+id/textview_cell_A"
