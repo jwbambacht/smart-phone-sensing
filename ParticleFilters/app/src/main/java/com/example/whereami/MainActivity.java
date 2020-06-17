@@ -409,7 +409,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         settingsSharedPreferences = getApplicationContext().getSharedPreferences("SETTINGS", 0);
 
         layout = settingsSharedPreferences.getString("layout", "Joost");
-        sensitivity = Float.parseFloat(settingsSharedPreferences.getString("sensitivity", "6"));
+        sensitivity = Float.parseFloat(settingsSharedPreferences.getString("sensitivity", "1.0"));
         stepSizeMultiplier = Integer.parseInt(settingsSharedPreferences.getString("stepsize", "5"));
         stepTime = Double.parseDouble(settingsSharedPreferences.getString("steptime","0.3"));
         nParticles = Integer.parseInt(settingsSharedPreferences.getString("particles", "5000"));

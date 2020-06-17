@@ -40,7 +40,7 @@ public class StepCounter {
         // Determine the magnitude of the acceleration difference over all axis with gravity subtracted.
         // Add to queue and take the average acceleration difference over all previous values.
         accelerationDifferenceQueue.add((normalizedAcceleration[0]*acceleration[0]+normalizedAcceleration[1]*acceleration[1]+normalizedAcceleration[2]*acceleration[2])-gravity);
-        double accelerationDifference = accelerationDifferenceQueue.sum(accelerationDifferenceQueue);
+        double accelerationDifference = accelerationDifferenceQueue.average(accelerationDifferenceQueue);
 
         // Obtain sensitivity/threshold from preferences. Manually optimization required for best result.
         double threshold = listener.getSensitivity();
