@@ -40,7 +40,7 @@ public class StepCounter {
         // Determine the magnitude of the acceleration difference over all axis with gravity subtracted.
         // Add to queue and take the average acceleration difference over all previous values.
         accelerationDifferenceQueue.add((normalizedAcceleration[0]*acceleration[0]+normalizedAcceleration[1]*acceleration[1]+normalizedAcceleration[2]*acceleration[2])-gravity);
-        double accelerationDifference = accelerationDifferenceQueue.average(accelerationDifferenceQueue);
+//        double accelerationDifference = accelerationDifferenceQueue.average(accelerationDifferenceQueue);
 
         // Obtain sensitivity/threshold from preferences. Manually optimization required for best result.
         double threshold = listener.getSensitivity();
@@ -49,12 +49,12 @@ public class StepCounter {
         // Average acceleration difference must be bigger than the defined threshold and the previous average acceleration difference must be smaller than the threshold.
         // This means that the phone accelerated in upward direction (increasing acceleration). The time to the previous step also should be at least some predefined value.
         // If all these conditions satisfy a step is counted and the particles will move in the current direction.
-        if(accelerationDifference > threshold && previousAccelerationDifference <= threshold && (timestamp-previousTimestamp) >= stepTime) {
+        if(accelerationDifferenceQueue.getLast() > threshold && previousAccelerationDifference <= threshold && (timestamp-previousTimestamp) >= stepTime) {
             int direction = listener.getDirection();
             listener.moveParticles(direction,true);
             previousTimestamp = timestamp;
         }
 
-        previousAccelerationDifference = accelerationDifference;
+        previousAccelerationDifference = accelerationDifferenceQueue.getLast();
     }
 }
