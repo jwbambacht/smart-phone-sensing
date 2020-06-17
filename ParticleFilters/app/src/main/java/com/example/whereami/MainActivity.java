@@ -184,12 +184,12 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                 }
             }
 
-            // If start button is pressed we detect a change in azimuth if the difference is big enough to compensate for sensitivity
-            if(startFiltering) {
-                if(Math.min((int)(((azimuth-lastAzimuth)%360)+360)%360,(int) (((lastAzimuth-azimuth)%360)+360)%360) >= 50) {
-                    lastAzimuth = azimuth;
-                }
-            }
+//            // If start button is pressed we detect a change in azimuth if the difference is big enough to compensate for sensitivity
+//            if(startFiltering) {
+//                if(Math.min((int)(((azimuth-lastAzimuth)%360)+360)%360,(int) (((lastAzimuth-azimuth)%360)+360)%360) >= 50) {
+//                    lastAzimuth = azimuth;
+//                }
+//            }
             textview_azimuth.setText("Azimuth:\n" + (int) azimuth);
         }
     };
