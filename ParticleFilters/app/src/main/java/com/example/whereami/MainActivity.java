@@ -321,7 +321,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                 init.setEnabled(false);
                 start.setEnabled(false);
                 reset.setText("STOP");
-                
+
                 executorService = Executors.newFixedThreadPool(1);
                 currentCellThread.start();
                 break;
@@ -409,9 +409,9 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         settingsSharedPreferences = getApplicationContext().getSharedPreferences("SETTINGS", 0);
 
         layout = settingsSharedPreferences.getString("layout", "Joost");
-        sensitivity = Float.parseFloat(settingsSharedPreferences.getString("sensitivity", "10"));
-        stepSizeMultiplier = Integer.parseInt(settingsSharedPreferences.getString("stepsize", "1"));
-        stepTime = Double.parseDouble(settingsSharedPreferences.getString("steptime","0.5"));
+        sensitivity = Float.parseFloat(settingsSharedPreferences.getString("sensitivity", "6"));
+        stepSizeMultiplier = Integer.parseInt(settingsSharedPreferences.getString("stepsize", "5"));
+        stepTime = Double.parseDouble(settingsSharedPreferences.getString("steptime","0.3"));
         nParticles = Integer.parseInt(settingsSharedPreferences.getString("particles", "5000"));
 
         width = this.getDisplaySize()[0];
