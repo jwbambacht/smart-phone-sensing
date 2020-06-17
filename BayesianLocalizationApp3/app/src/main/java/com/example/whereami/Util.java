@@ -314,7 +314,7 @@ public class Util  extends AppCompatActivity {
     }
 
     // Method that calculates the Gaussian Kernel Density Estimator, with std as the standard deviation of the sample values,
-    // bandwidth is estimated to be approximately (4(std)^5/(3n))^(1/5)
+    // bandwidth is estimated to be approximately (4(std)^5/(3n))^(1/5). More info: http://faculty.washington.edu/yenchic/17Sp_403/Lec7-density.pdf
     static double gaussianKernelProbability(int x, List<Integer> samples) {
         int size = samples.size();
         double std = standardDeviation(samples);
