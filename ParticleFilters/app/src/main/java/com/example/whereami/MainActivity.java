@@ -53,30 +53,31 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
     // General variables
     private int width, height;
     private String layout;
-    private int stepSize;
+    private int stepSize = 5;
     private float sensitivity;
     private int stepSizeMultiplier;
     private double stepTime;
     private int nParticles;
-    private int numSteps;
-    private String[] cellNames;
+    private int wallThickness = 5;
+    private int numSteps = 0;
+    private String[] cellNames = new String[]{"A","B","C","D","E","F","G","H"};
 
     // Variables for orientation and filtering
-    private boolean startFiltering;
-    private boolean initializeOrientation;
-    private boolean anchorGathered;
-    private int anchorCount;
-    private int anchor;
-    private int[] anchorVector;
+    private boolean startFiltering = false;
+    private boolean initializeOrientation = false;
+    private boolean anchorGathered = false;
+    private int anchorCount = 0;
+    private int anchor = 0;
 
     // Sensors and sensor variables
     private SensorManager sensorManager;
     private Sensor rotationSensor;
     private Sensor accelerometerSensor;
-    private double azimuth, lastAzimuth;
+    private double azimuth;
     private StepCounter stepCounter;
 
-    CircularQueue<Double> queue;
+    // Queue for azimuth values
+    CircularQueue<Double> queue = new CircularQueue<>(2);
 
     ExecutorService executorService = Executors.newFixedThreadPool(1);
 
@@ -90,18 +91,6 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
         // Obtain settings from shared preferences and display size
         getSettings();
-
-        // Set variables
-        stepSize = 5;
-        numSteps = 0;
-        startFiltering = false;
-        initializeOrientation = false;
-        anchorCount = 0;
-        anchorGathered = false;
-        anchor = 0;
-        cellNames = new String[]{"A","B","C","D","E","F","G","H"};
-
-        queue = new CircularQueue<>(2);
 
         // Sensors
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
@@ -121,12 +110,22 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         init = (Button) findViewById(R.id.button_init);
         start = (Button) findViewById(R.id.button_start);
 
+        toggleButtons(false);
+        up.setOnClickListener(this);
+        down.setOnClickListener(this);
+        left.setOnClickListener(this);
+        right.setOnClickListener(this);
+        reset.setOnClickListener(this);
+        init.setOnClickListener(this);
+        start.setOnClickListener(this);
+
         // TextViews
         textview_azimuth = (TextView) findViewById(R.id.textview_azimuth);
         textview_particle_count = (TextView) findViewById(R.id.textview_particle_count);
         textview_steps = (TextView) findViewById(R.id.textview_steps);
         textview_direction = (TextView) findViewById(R.id.textview_direction);
 
+        // TextViews for convergence results
         cellResults = new ArrayList<>();
         cellResults.add((TextView) findViewById(R.id.textview_cell_A));
         cellResults.add((TextView) findViewById(R.id.textview_cell_B));
@@ -140,15 +139,6 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         for(int i = 0; i < cellResults.size(); i++) {
             cellResults.get(i).setText("Cell "+cellNames[i]+":\n0.1250");
         }
-
-        toggleButtons(false);
-        up.setOnClickListener(this);
-        down.setOnClickListener(this);
-        left.setOnClickListener(this);
-        right.setOnClickListener(this);
-        reset.setOnClickListener(this);
-        init.setOnClickListener(this);
-        start.setOnClickListener(this);
 
         // Initialize Canvas
         this.prepareCanvas();
@@ -291,7 +281,6 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                     if(executorService.awaitTermination(0,TimeUnit.SECONDS)) {
                         initializeOrientation = false;
                         anchorGathered = false;
-                        anchorVector = new int[5];
                         anchor = 0;
                         numSteps = 0;
 
@@ -592,8 +581,6 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
     // Method that creates the layouts
     public List<ShapeDrawable> createLayout() {
         List<ShapeDrawable> walls = new ArrayList<>();
-
-        int wallThickness = 5;
 
         if(layout.equals("Joost")) {
             // Top boundary
