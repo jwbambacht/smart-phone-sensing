@@ -4,13 +4,13 @@ public class StepCounter {
 
     private StepListener listener;
     private int accelerationHistory = 50;
-    private int velocityHistory = 10;
-    private double previousVelocity = 0;
+    private int accelerationDifferenceHistory = 10;
+    private double previousAccelerationDifference = 0;
     private long previousTimestamp = 0;
     private CircularQueue<Double> accelerationQueueX = new CircularQueue(accelerationHistory);
     private CircularQueue<Double> accelerationQueueY = new CircularQueue(accelerationHistory);
     private CircularQueue<Double> accelerationQueueZ = new CircularQueue(accelerationHistory);
-    private CircularQueue<Double> velocityQueue = new CircularQueue(velocityHistory);
+    private CircularQueue<Double> accelerationDifferenceQueue = new CircularQueue(accelerationDifferenceHistory);
 
     public void registerListener(StepListener listener) {
         this.listener = listener;
@@ -37,24 +37,24 @@ public class StepCounter {
         normalizedAcceleration[1] = averageAcceleration[1]/gravity;
         normalizedAcceleration[2] = averageAcceleration[2]/gravity;
 
-        // Determine combined velocity/movement over all axis with gravity subtracted.
-        // Add the movement to queue and take the average velocity over all previous values.
-        velocityQueue.add((normalizedAcceleration[0]*acceleration[0]+normalizedAcceleration[1]*acceleration[1]+normalizedAcceleration[2]*acceleration[2])-gravity);
-        double averageVelocity = velocityQueue.sum(velocityQueue);
+        // Determine the magnitude of the acceleration difference over all axis with gravity subtracted.
+        // Add to queue and take the average acceleration difference over all previous values.
+        accelerationDifferenceQueue.add((normalizedAcceleration[0]*acceleration[0]+normalizedAcceleration[1]*acceleration[1]+normalizedAcceleration[2]*acceleration[2])-gravity);
+        double accelerationDifference = accelerationDifferenceQueue.sum(accelerationDifferenceQueue);
 
         // Obtain sensitivity/threshold from preferences. Manually optimization required for best result.
         double threshold = listener.getSensitivity();
         double stepTime = listener.getStepTime();
 
-        // Average velocity/movement must be bigger than the defined threshold and the previous average velocity must be smaller than the threshold.
-        // This means that the phone accelerated in some direction. The time to the previous step also should be at least some predefined value.
+        // Average acceleration difference must be bigger than the defined threshold and the previous average acceleration difference must be smaller than the threshold.
+        // This means that the phone accelerated in upward direction (increasing acceleration). The time to the previous step also should be at least some predefined value.
         // If all these conditions satisfy a step is counted and the particles will move in the current direction.
-        if(averageVelocity > threshold && previousVelocity <= threshold && (timestamp-previousTimestamp) >= stepTime) {
+        if(accelerationDifference > threshold && previousAccelerationDifference <= threshold && (timestamp-previousTimestamp) >= stepTime) {
             int direction = listener.getDirection();
             listener.moveParticles(direction,true);
             previousTimestamp = timestamp;
         }
 
-        previousVelocity = averageVelocity;
+        previousAccelerationDifference = accelerationDifference;
     }
 }
