@@ -12,14 +12,15 @@ public class Particle {
     boolean collided;
     int pointRadius;
     float weight;
-    int width, height;
+    int width, height, wallThickness;
 
-    public Particle(int x, int y, int nParticles, int width, int height) {
+    public Particle(int x, int y, int nParticles, int width, int height, int wallThickness) {
         this.x = x;
         this.y = y;
         this.pointRadius = 2;
         this.width = width;
         this.height = height;
+        this.wallThickness = wallThickness;
         this.weight = 1;
         this.shape = new ShapeDrawable(new OvalShape());
         this.shape.getPaint().setColor(Color.RED);
@@ -51,12 +52,20 @@ public class Particle {
     public void lowerWeight() { this.weight = this.weight/2; }
 
     public void resample(int x, int y) {
-        int offPlacement = 3;
-        int randomXOffPlacement = (int) (Math.random() * offPlacement * 2) - offPlacement;
-        int randomYOffPlacement = (int) (Math.random() * offPlacement * 2) - offPlacement;
+        boolean finished = false;
 
-        this.x = x+randomXOffPlacement;
-        this.y = y+randomYOffPlacement;
+        while(!finished) {
+            int offPlacement = 8;
+            int randomXOffPlacement = (int) (Math.random() * offPlacement * 2) - offPlacement;
+            int randomYOffPlacement = (int) (Math.random() * offPlacement * 2) - offPlacement;
+
+            this.x = x + randomXOffPlacement;
+            this.y = y + randomYOffPlacement;
+
+            if(this.x > wallThickness && this.x < width-wallThickness && this.y > wallThickness && this.y < height-wallThickness) {
+                finished = true;
+            }
+        }
 
         this.shape.setBounds(this.x-this.pointRadius, this.y-this.pointRadius, this.x+this.pointRadius, this.y+this.pointRadius);
     }
@@ -69,8 +78,6 @@ public class Particle {
                 cellID = 1;
             }else if(this.x <= width){
                 cellID = 0;
-            }else{
-                System.out.println("OFF GRID");
             }
         }else if(this.y <= this.height/6*2) {
             cellID = 2;
@@ -85,11 +92,7 @@ public class Particle {
                 cellID = 7;
             }else if(this.x <= width){
                 cellID = 6;
-            }else{
-                System.out.println("OFF GRID");
             }
-        }else{
-            System.out.println("OFF GRID");
         }
         return cellID;
     }
@@ -112,9 +115,5 @@ public class Particle {
             this.shape.setBounds(r.left + stepSize, r.top, r.right + stepSize, r.bottom);
             this.x += stepSize;
         }
-    }
-
-    public double distanceToOtherParticle(Particle particle) {
-        return Math.sqrt((particle.getY()-this.y) * (particle.getY()-this.y) + (particle.getX()-this.x) * (particle.getX()-this.x));
     }
 }

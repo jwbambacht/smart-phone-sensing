@@ -140,6 +140,9 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
             cellResults.get(i).setText("Cell "+cellNames[i]+":\n0.1250");
         }
 
+        // Get the size of the display
+        this.getDisplaySize();
+
         // Initialize Canvas
         this.prepareCanvas();
     }
@@ -379,18 +382,15 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
     }
 
     // Method that determines the screen size and adapts the size of the layout
-    public int[] getDisplaySize() {
+    public void getDisplaySize() {
         Display display = getWindowManager().getDefaultDisplay();
         Point size = new Point();
         display.getSize(size);
-        int[] sizes = new int[2];
 
         if(layout.equals("Joost")) {
-            sizes[0] = size.x * 9 / 16;
-            sizes[1] = size.y;
+            this.width = size.x * 9 / 16;
+            this.height = size.y;
         }
-
-        return sizes;
     }
 
     // Method that retrieves the settings from the sharedpreferences
@@ -403,8 +403,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         stepTime = Double.parseDouble(settingsSharedPreferences.getString("steptime","0.3"));
         nParticles = Integer.parseInt(settingsSharedPreferences.getString("particles", "5000"));
 
-        width = this.getDisplaySize()[0];
-        height = this.getDisplaySize()[1];
+        this.getDisplaySize();
     }
 
     // Method that makes the particles move over the layout, based on the direction and stepsize
@@ -507,15 +506,12 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
     // Method that create a number of particles randomnly spread over the layout
     public List<Particle> createParticles() {
 
-        int width = this.getDisplaySize()[0];
-        int height = this.getDisplaySize()[1];
-
         List<Particle> particles = new ArrayList<>();
 
         for(int i = 0; i < nParticles; i++) {
             int x = (int) (Math.random()*width);
             int y = (int) (Math.random()*height);
-            Particle particle = new Particle(x,y,nParticles,width,height);
+            Particle particle = new Particle(x,y,nParticles,width,height,wallThickness);
             particles.add(particle);
             particle.getShape().draw(canvas);
         }
