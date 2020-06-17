@@ -13,6 +13,7 @@ import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.content.Intent;
+import android.os.CountDownTimer;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.Menu;
@@ -99,12 +100,6 @@ public class MainActivity extends AppCompatActivity {
                         ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, 1);
                     } else {
 
-                        Toast.makeText(MainActivity.this, "Sensing...", Toast.LENGTH_SHORT).show();
-
-                        if(sensingFinished) {
-                            resetSensing();
-                        }
-
                         System.out.println("PRIOR: "+Arrays.toString(prior));
                         posterior = Util.BayesianLocalization(db,prior, wifiManager, networkNames);
 
@@ -117,9 +112,24 @@ public class MainActivity extends AppCompatActivity {
                             senseLabel.setText(getResources().getString(R.string.textview_sense_again));
                             prior = posterior;
                         }
-
                         createCellGrid(leftGridLayout, cells, posterior);
 
+                        new CountDownTimer(10000, 1000) {
+                            public void onTick(long millis) {
+                                sense.setEnabled(false);
+                                sense.setText("SENSE IN " + millis / 1000);
+                            }
+
+                            public void onFinish() {
+                                sense.setEnabled(true);
+                                if(sensingFinished) {
+                                    sense.setText("RESET SENSE RESULTS");
+                                }else {
+                                    sense.setText("SENSE");
+                                }
+                            }
+
+                        }.start();
                     }
                 }
             }
@@ -203,8 +213,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
      void resetSensing() {
-        prior = new double[8];
-        Arrays.fill(prior, 0.125);
+        prior = new double[]{0.125,0.125,0.125,0.125,0.125,0.125,0.125,0.125};
         sensingFinished = false;
         senseLabel.setText(getResources().getString(R.string.textview_sense_to_see));
      }
