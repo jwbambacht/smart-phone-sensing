@@ -1,5 +1,6 @@
 package com.example.whereami;
 
+import android.view.View.OnClickListener;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.database.sqlite.SQLiteDatabase;
@@ -11,48 +12,80 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-public class SettingsActivity extends AppCompatActivity {
+import java.io.IOException;
+
+public class SettingsActivity extends AppCompatActivity implements OnClickListener {
 
     SQLiteDatabase db;
+    Button exportButton, importButton, resetButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
-
-        db = openOrCreateDatabase("database.db", MODE_PRIVATE, null);
-
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        Button resetButton = (Button) findViewById(R.id.button_reset_training);
-        resetButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Util.resetSamples(db);
+        // Obtain database endpoint
+        db = openOrCreateDatabase("database.db", MODE_PRIVATE, null);
 
+        // Initialize buttons and click listeners
+        resetButton = (Button) findViewById(R.id.button_reset_training);
+        exportButton = (Button) findViewById(R.id.button_export);
+        importButton = (Button) findViewById(R.id.button_import);
+        resetButton.setOnClickListener(this);
+        exportButton.setOnClickListener(this);
+        importButton.setOnClickListener(this);
+
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.button_export: {
+                exportSamples();
+                break;
+            }
+            case R.id.button_import: {
+                importSamples();
+                break;
+            }
+            case R.id.button_reset_training: {
+                Database.resetSamples(db);
                 Toast.makeText(getApplicationContext(), R.string.confirm_reset_training_text, Toast.LENGTH_SHORT).show();
+                break;
             }
-        });
+        }
+    }
 
-        Button exportButton = (Button) findViewById(R.id.button_export);
-        exportButton.setOnClickListener(new View.OnClickListener() {
+    // Method that enables exporting samples
+    public void exportSamples() {
+        if (ContextCompat.checkSelfPermission(SettingsActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(SettingsActivity.this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+            Toast.makeText(SettingsActivity.this, "EXTERNAL WRITE ACCESS PERMITTED", Toast.LENGTH_SHORT).show();
+        }else {
+            if(Database.exportData(db)) {
+                Toast.makeText(SettingsActivity.this, "Database Exported!", Toast.LENGTH_LONG).show();
+            }else{
+                Toast.makeText(SettingsActivity.this, "There are no samples to export!", Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
+    public void importSamples() {
+        Toast.makeText(SettingsActivity.this, "Database import started!", Toast.LENGTH_LONG).show();
+        Toast toast = Toast.makeText(SettingsActivity.this, "Data imported!", Toast.LENGTH_LONG);
+        Thread thread = new Thread(new Runnable() {
             @Override
-            public void onClick(View view) {
-
-                if (ContextCompat.checkSelfPermission(SettingsActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                    ActivityCompat.requestPermissions(SettingsActivity.this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
-                    Toast.makeText(SettingsActivity.this, "EXTERNAL WRITE ACCESS PERMITTED", Toast.LENGTH_SHORT).show();
-                }else {
-                    boolean export = Util.exportSamples(db);
-
-                    if (export) {
-                        Toast.makeText(SettingsActivity.this, "Database Exported!", Toast.LENGTH_LONG).show();
-                    }else{
-                        Toast.makeText(SettingsActivity.this, "There are no samples to export!", Toast.LENGTH_LONG).show();
-                    }
+            public void run() {
+                try {
+                    Database.importData(db, SettingsActivity.this);
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
+                toast.show();
             }
         });
+        thread.start();
     }
 
     @Override
