@@ -1,11 +1,11 @@
 package com.example.whereami;
 
-public class ResultScan implements Comparable<ResultScan> {
+public class AccessPoint implements Comparable<AccessPoint> {
 
     public String BSSID;
     public int RSSI;
 
-    public ResultScan(String BSSID, int RSSI) {
+    public AccessPoint(String BSSID, int RSSI) {
         this.BSSID = BSSID;
         this.RSSI = RSSI;
     }
@@ -19,7 +19,12 @@ public class ResultScan implements Comparable<ResultScan> {
     }
 
     @Override
-    public int compareTo(ResultScan o) {
+    public int compareTo(AccessPoint o) {
         return this.RSSI-o.RSSI;
+    }
+
+    @Override
+    public String toString() {
+        return this.BSSID+", "+this.RSSI;
     }
 }

@@ -1,5 +1,6 @@
 package com.example.whereami;
 
+import android.view.View.OnClickListener;
 import android.Manifest;
 import android.content.Context;
 import android.content.IntentFilter;
@@ -25,9 +26,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-public class TrainingActivity extends AppCompatActivity {
+public class TrainingActivity extends AppCompatActivity implements OnClickListener {
 
-    // Receiver
+    // Manager and Receiver
     private WifiManager wifiManager;
     WifiReceiver receiverWifi;
 
@@ -37,6 +38,7 @@ public class TrainingActivity extends AppCompatActivity {
     // UI Elements
     TableLayout tableSamples;
     Button trainButton;
+    Spinner cellSpinner;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,59 +47,86 @@ public class TrainingActivity extends AppCompatActivity {
 
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
+        // Obtain database endpoint
         db = openOrCreateDatabase("database.db", MODE_PRIVATE, null);
 
-        this.tableSamples = (TableLayout) findViewById(R.id.table_samples);
-        this.tableSamples.setStretchAllColumns(true);
-        this.loadTableData(this.tableSamples);
-
+        // Initialize wifi manager and enable wifi if off
         wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         if (!wifiManager.isWifiEnabled()) {
             Toast.makeText(getApplicationContext(), "Turning WiFi ON...", Toast.LENGTH_LONG).show();
             wifiManager.setWifiEnabled(true);
         }
 
-        Spinner cellSpinner = (Spinner) findViewById(R.id.spinner_cell);
+        // Load statistics in table
+        tableSamples = (TableLayout) findViewById(R.id.table_samples);
+        tableSamples.setStretchAllColumns(true);
+        loadTableData();
+
+        // Set values for dropdown spinner
+        cellSpinner = (Spinner) findViewById(R.id.spinner_cell);
         ArrayAdapter<String> cellAdapter = new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item, getResources().getStringArray(R.array.cell_array));
         cellSpinner.setAdapter(cellAdapter);
 
+        // Add button
         trainButton = (Button) findViewById(R.id.button_add_training);
-        trainButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
+        trainButton.setOnClickListener(this);
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.button_add_training: {
                 int idxCell = cellSpinner.getSelectedItemPosition();
-
-                try {
-                    addToTraining(idxCell);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+                addToTraining(idxCell);
+                break;
             }
-        });
+        }
     }
 
-    @Override
-    public boolean onSupportNavigateUp(){
-        finish();
-        return true;
-    }
+    // Method that adds training samples to the database
+    public void addToTraining(int cellID) {
+        if (ActivityCompat.checkSelfPermission(TrainingActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(TrainingActivity.this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, 1);
+            Toast.makeText(getApplicationContext(), R.string.error_add_training_text, Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this,"SAMPLING STARTED FOR THIS CELL", Toast.LENGTH_SHORT).show();
+            Toast toast = Toast.makeText(getApplicationContext(),"SAMPLING FINISHED FOR THIS CELL", Toast.LENGTH_SHORT);
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        this.loadTableData(this.tableSamples);
+            Thread thread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    int nScans = 10;
+                    int scanned = 0;
+                    int scanID = Database.getMaximumScanID(db);
+
+                    try {
+                        while(scanned < nScans) {
+                            scanID += 1;
+                            Thread.sleep(10000);
+                            Log.i("Scan ",""+scanned);
+                            Util.train(wifiManager,db,cellID, scanID);
+                            scanned++;
+                        }
+                        toast.show();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+            thread.start();
+        }
     }
 
     // Method that loads the data of the table, removes current data and inserts new data
-    public void loadTableData(TableLayout table) {
+    public void loadTableData() {
 
-        table.removeAllViews();
+        this.tableSamples.removeAllViews();
 
         int[] cellCount = new int[8];
         int totalCount = 0;
 
         for(int i = 0; i < cellCount.length; i++) {
-            int count = Util.getTrainingCount(db,i);
+            int count = Database.getTrainingCount(db,i);
             cellCount[i] = count;
             totalCount += count;
         }
@@ -135,57 +164,8 @@ public class TrainingActivity extends AppCompatActivity {
             textViewRight.setTextSize(TypedValue.COMPLEX_UNIT_SP,fontSize);
 
             tableRow.addView(textViewRight);
-            table.addView(tableRow, new TableLayout.LayoutParams(TableRow.LayoutParams.WRAP_CONTENT, TableRow.LayoutParams.WRAP_CONTENT));
+            this.tableSamples.addView(tableRow, new TableLayout.LayoutParams(TableRow.LayoutParams.WRAP_CONTENT, TableRow.LayoutParams.WRAP_CONTENT));
         }
-    }
-
-    public void addToTraining(int cellID) throws InterruptedException {
-
-        if (ActivityCompat.checkSelfPermission(TrainingActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(TrainingActivity.this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, 1);
-
-            Toast.makeText(getApplicationContext(), R.string.error_add_training_text, Toast.LENGTH_SHORT).show();
-        } else {
-
-            Toast.makeText(this,"SAMPLING STARTED FOR THIS CELL", Toast.LENGTH_SHORT).show();
-
-            Toast toast = Toast.makeText(getApplicationContext(),"SAMPLING FINISHED FOR THIS CELL", Toast.LENGTH_SHORT);
-
-            Thread thread = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    int nScans = 10;
-                    int timeDifference = 10;
-                    int delay = timeDifference*1000;
-                    int scanned = 0;
-                    int scanID = Util.getMaximumScanID(db);
-
-                    try {
-                        while(scanned < nScans) {
-                            scanID += 1;
-                            Thread.sleep(delay);
-                            Log.i("Scan ",""+scanned);
-                            Util.findNetworks(wifiManager,db,cellID, false, scanID);
-                            scanned++;
-                        }
-                        toast.show();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            });
-            thread.start();
-        }
-    }
-
-    @Override
-    protected void onPostResume() {
-        super.onPostResume();
-        receiverWifi = new WifiReceiver(wifiManager);
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
-        registerReceiver(receiverWifi, intentFilter);
-        getWifi();
     }
 
     private void getWifi() {
@@ -200,6 +180,21 @@ public class TrainingActivity extends AppCompatActivity {
             Toast.makeText(TrainingActivity.this, "scanning", Toast.LENGTH_SHORT).show();
 
         }
+    }
+
+    @Override
+    public boolean onSupportNavigateUp(){
+        finish();
+        return true;
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        this.loadTableData();
+        receiverWifi = new WifiReceiver(wifiManager);
+        registerReceiver(receiverWifi, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
+        getWifi();
     }
 
     @Override
