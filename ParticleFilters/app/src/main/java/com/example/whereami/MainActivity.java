@@ -66,10 +66,9 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
     // Variables for orientation and filtering
     private boolean startFiltering = false;
-    private boolean initializeOrientation = false;
-    private boolean anchorGathered = false;
-    private int anchorCount = 0;
     private int anchor = 0;
+    private long cornerDelay = 0;
+    private boolean initialize = false;
 
     // Sensors and sensor variables
     private SensorManager sensorManager;
@@ -79,7 +78,8 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
     private StepCounter stepCounter;
 
     // Queue for azimuth values
-    CircularQueue<Double> queue = new CircularQueue<>(2);
+    CircularQueue<Double> orientationQueue = new CircularQueue<>(2);
+    CircularQueue<Double> anchorQueue = new CircularQueue<>(5);
 
     ExecutorService executorService = Executors.newFixedThreadPool(1);
 
@@ -165,26 +165,17 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
             azimuth = (double) ((float) Math.toDegrees((float) Math.atan2(rotationMatrix[1],rotationMatrix[5]))+360) % 360;
 
             // Add azimuth to queue to be able to detect direction changes without counting a step
-            queue.add(azimuth);
+            orientationQueue.add(azimuth);
 
-            // If init button is pressed we obtain 5 values for azimuth and take the average for initial orientation
-            if(initializeOrientation && !anchorGathered && anchorCount < 5) {
-                anchor += (int) azimuth;
-                anchorCount++;
-
-                if(anchorCount == 5) {
-                    initializeOrientation = false;
-                    anchorGathered = true;
-                    anchor = anchor/5;
-                }
+            // Initialize anchor values by taking 5 orientation-values and taking the average as calibrated anchor.
+            if(initialize && anchorQueue.size() < 5) {
+                anchorQueue.add(azimuth);
+            }
+            if(initialize && anchorQueue.size() == 5) {
+                anchor = (int) anchorQueue.average(anchorQueue);
+                initialize = false;
             }
 
-//            // If start button is pressed we detect a change in azimuth if the difference is big enough to compensate for sensitivity
-//            if(startFiltering) {
-//                if(Math.min((int)(((azimuth-lastAzimuth)%360)+360)%360,(int) (((lastAzimuth-azimuth)%360)+360)%360) >= 50) {
-//                    lastAzimuth = azimuth;
-//                }
-//            }
             textview_azimuth.setText("Azimuth:\n" + (int) azimuth);
         }
     };
@@ -195,10 +186,16 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
         public void onSensorChanged(SensorEvent event) {
 
-            // To account for changes in direction (90 degrees) we only allow a step to be included if the (absolute) rotation is smaller than 30 degrees
+            // If a step is bigger than 60 degrees we do not count a step and set a delay on the timestamp such that the corner step is not taken. Otherwise there may be a result of over-walking, especially when making a 180 degree turn
             if(startFiltering) {
-                if(Math.min((int)(((queue.getLast()-queue.sum(queue)/queue.size())%360)+360)%360,(int) (((queue.sum(queue)/queue.size()-queue.getLast())%360)+360)%360) < 60) {
-                    stepCounter.count(TimeUnit.SECONDS.convert(event.timestamp, TimeUnit.NANOSECONDS), event.values);
+                long timeStamp = TimeUnit.SECONDS.convert(event.timestamp, TimeUnit.NANOSECONDS);
+
+                if(Math.min((int)(((orientationQueue.getLast()-orientationQueue.sum(orientationQueue)/orientationQueue.size())%360)+360)%360,(int) (((orientationQueue.sum(orientationQueue)/orientationQueue.size()-orientationQueue.getLast())%360)+360)%360) > 60) {
+                    cornerDelay = timeStamp+1;
+                }else{
+                    if(timeStamp >= cornerDelay) {
+                        stepCounter.count(timeStamp, event.values);
+                    }
                 }
             }
         }
@@ -264,19 +261,19 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.button_up: {
-                moveParticles(0);
+                moveParticles(0, false);
                 break;
             }
             case R.id.button_down: {
-                moveParticles(1);
+                moveParticles(1,false);
                 break;
             }
             case R.id.button_left: {
-                moveParticles(2);
+                moveParticles(2,false);
                 break;
             }
             case R.id.button_right: {
-                moveParticles(3);
+                moveParticles(3,false);
                 break;
             }
             case R.id.button_reset: {
@@ -284,10 +281,10 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
                 try {
                     if(executorService.awaitTermination(0,TimeUnit.SECONDS)) {
-                        initializeOrientation = false;
-                        anchorGathered = false;
+                        anchorQueue = new CircularQueue<>(5);
                         anchor = 0;
                         numSteps = 0;
+                        initialize = false;
 
                         toggleButtons(false);
                         init.setEnabled(true);
@@ -303,10 +300,8 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                 break;
             }
             case R.id.button_init: {
-                if(!initializeOrientation) {
-                    initializeOrientation = true;
-                    toggleButtons(true);
-                }
+                initialize = true;
+                toggleButtons(true);
                 break;
             }
             case R.id.button_start: {
@@ -410,15 +405,12 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
     // Method that makes the particles move over the layout, based on the direction and stepsize
     // StepSizeMultiplier is used to optimize the number of steps to the actual walked distance. Requires manual optimization
-
     public void moveParticles(int direction, boolean step) {
-        numSteps++;
-        textview_steps.setText("Steps:\n"+numSteps);
 
-        moveParticles(direction);
-    }
-
-    public void moveParticles(int direction) {
+        if(step) {
+            numSteps++;
+            textview_steps.setText("Steps:\n"+numSteps);
+        }
 
         executorService.execute(new Runnable() {
             @Override
@@ -545,6 +537,12 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         return this.sensitivity;
     }
 
+    // Method for step interface, passing the (average) time per step
+    @Override
+    public double getStepTime() {
+        return this.stepTime;
+    };
+
     // Method for step interface, passing the direction to walk
     @Override
     public int getDirection() {
@@ -572,11 +570,5 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
         return direction;
     }
-
-    // Method for step interface, passing the (average) time per step
-    @Override
-    public double getStepTime() {
-        return this.stepTime;
-    };
 
 }
