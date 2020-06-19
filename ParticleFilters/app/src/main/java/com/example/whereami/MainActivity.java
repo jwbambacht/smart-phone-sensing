@@ -5,8 +5,10 @@ import androidx.core.content.ContextCompat;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Paint;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 import android.view.View.OnClickListener;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -423,11 +425,11 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
             public void run() {
                 for (int i = 0; i < stepSizeMultiplier; i++) {
                     for (Particle particle : particles) {
-                        particle.updateLocation(direction, stepSize);
+                        particle.move(direction, stepSize);
 
                         if (isCollision(particle.getShape())) {
                             particle.setCollided(true);
-                            resampleParticle(particle);
+                            resampleParticle(particle,false);
                         }
                     }
 
@@ -458,7 +460,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
     // Method that resample a collided particle. It randomly chooses another particle and takes its current location.
     // Resamples based on more random numbers. If collided with a wall, the process repeats until not collided.
-    public void resampleParticle(Particle particle) {
+    public void resampleParticle(Particle particle, boolean init) {
         while(particle.getCollided()) {
             // Get the x and y coordinates of an uncollided random particle to resample a collided particle to
             int randomParticleID = (int) (Math.random() * particles.size());
@@ -469,7 +471,9 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
             if (!isCollision(particle.getShape())) {
                 particle.setCollided(false);
-                particle.lowerWeight();
+                if(!init) {
+                    particle.lowerWeight();
+                }
             }
         }
     }
@@ -493,7 +497,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
             ShapeDrawable particleShape = particle.getShape();
             if(isCollision(particleShape)) {
                 particle.setCollided(true);
-                resampleParticle(particle);
+                resampleParticle(particle,true);
             }
         }
 
@@ -511,7 +515,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         for(int i = 0; i < nParticles; i++) {
             int x = (int) (Math.random()*width);
             int y = (int) (Math.random()*height);
-            Particle particle = new Particle(x,y,nParticles,width,height,wallThickness);
+            Particle particle = new Particle(x,y,width,height,wallThickness);
             particles.add(particle);
             particle.getShape().draw(canvas);
         }
