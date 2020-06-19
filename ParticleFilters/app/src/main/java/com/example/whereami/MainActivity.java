@@ -48,13 +48,13 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
     // Canvas and shapes
     private Canvas canvas;
     private List<Particle> particles;
-    private List<ShapeDrawable> walls;
+    private Layout layout;
 
     private SharedPreferences settingsSharedPreferences;
 
     // General variables
     private int width, height;
-    private String layout;
+    private String layoutType;
     private int stepSize = 5;
     private float sensitivity;
     private int stepSizeMultiplier;
@@ -389,7 +389,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         Point size = new Point();
         display.getSize(size);
 
-        if(layout.equals("Joost")) {
+        if(layoutType.equals("Joost")) {
             this.width = size.x * 9 / 16;
             this.height = size.y;
         }
@@ -399,7 +399,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
     public void getSettings() {
         settingsSharedPreferences = getApplicationContext().getSharedPreferences("SETTINGS", 0);
 
-        layout = settingsSharedPreferences.getString("layout", "Joost");
+        layoutType = settingsSharedPreferences.getString("layout", "Joost");
         sensitivity = Float.parseFloat(settingsSharedPreferences.getString("sensitivity", "1.0"));
         stepSizeMultiplier = Integer.parseInt(settingsSharedPreferences.getString("stepsize", "5"));
         stepTime = Double.parseDouble(settingsSharedPreferences.getString("steptime","0.3"));
@@ -438,8 +438,8 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                         particle.getShape().draw(canvas);
                     }
 
-                    for (ShapeDrawable wall : walls) {
-                        wall.draw(canvas);
+                    for (ShapeDrawable boundary : layout.getBoundaries()) {
+                        boundary.draw(canvas);
                     }
 
                     moveHandler.sendMessage(new Message());
@@ -486,11 +486,12 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         canvas.drawColor(ContextCompat.getColor(this, R.color.colorDark));
         canvasView.setImageBitmap(blankBitmap);
 
-        particles = this.createParticles();
-        walls = this.createLayout();
+        layout = new Layout(this.width,this.height, this.wallThickness, this);
 
-        for (ShapeDrawable wall : walls) {
-            wall.draw(canvas);
+        particles = createParticles();
+
+        for (ShapeDrawable boundary : layout.getBoundaries()) {
+            boundary.draw(canvas);
         }
 
         for(Particle particle : particles) {
@@ -525,17 +526,17 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
     // Method that determines if the particle collides with a wall or furniture
     private boolean isCollision(ShapeDrawable particle) {
-        for(ShapeDrawable wall : walls) {
-            if(isCollision(wall,particle))
+        for(ShapeDrawable boundary : layout.getBoundaries()) {
+            if(isCollision(boundary,particle))
                 return true;
         }
         return false;
     }
 
     // Helper method that detects collision between two shapes
-    private boolean isCollision(ShapeDrawable wall, ShapeDrawable particle) {
-        Rect wallShape = new Rect(wall.getBounds());
-        return wallShape.intersect(particle.getBounds());
+    private boolean isCollision(ShapeDrawable boundary, ShapeDrawable particle) {
+        Rect boundaryShape = new Rect(boundary.getBounds());
+        return boundaryShape.intersect(particle.getBounds());
     }
 
     // Method for step interface, passing the sensitivity/threshold of step determination
@@ -578,170 +579,4 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         return this.stepTime;
     };
 
-    // Method that creates the layouts
-    public List<ShapeDrawable> createLayout() {
-        List<ShapeDrawable> walls = new ArrayList<>();
-
-        if(layout.equals("Joost")) {
-            // Top boundary
-            ShapeDrawable topBoundary = new ShapeDrawable(new RectShape());
-            topBoundary.setBounds(0, 0, width, wallThickness * 2);
-            topBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorMuted));
-            walls.add(topBoundary);
-
-            // Right boundary
-            ShapeDrawable rightBoundary = new ShapeDrawable(new RectShape());
-            rightBoundary.setBounds(width - 2 * wallThickness, 0, width, height);
-            rightBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorMuted));
-            walls.add(rightBoundary);
-
-            // Bottom boundary
-            ShapeDrawable bottomBoundary = new ShapeDrawable(new RectShape());
-            bottomBoundary.setBounds(0, height - 2 * wallThickness, width, height);
-            bottomBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorMuted));
-            walls.add(bottomBoundary);
-
-            // Left boundary
-            ShapeDrawable leftBoundary = new ShapeDrawable(new RectShape());
-            leftBoundary.setBounds(0, 0, 2 * wallThickness, height);
-            leftBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorMuted));
-            walls.add(leftBoundary);
-
-            // Wall A-B
-            ShapeDrawable abBoundary = new ShapeDrawable(new RectShape());
-            abBoundary.setBounds(width / 2 - wallThickness, 0, width / 2 + wallThickness, height / 6);
-            abBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorMuted));
-            walls.add(abBoundary);
-
-            // Wall A-C
-            ShapeDrawable acBoundary = new ShapeDrawable(new RectShape());
-            acBoundary.setBounds(width / 2, height / 6 - wallThickness, width / 2 + 15, height / 6 + wallThickness);
-            acBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorMuted));
-            walls.add(acBoundary);
-            ShapeDrawable accBoundary = new ShapeDrawable(new RectShape());
-            accBoundary.setBounds(width / 2 + 80, height / 6 - wallThickness, width, height / 6 + wallThickness);
-            accBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorMuted));
-            walls.add(accBoundary);
-
-            // Walls B-C
-            ShapeDrawable bcBoundary = new ShapeDrawable(new RectShape());
-            bcBoundary.setBounds(0, height / 6 - wallThickness, width / 2 - 105, height / 6 + wallThickness);
-            bcBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorMuted));
-            walls.add(bcBoundary);
-            ShapeDrawable bccBoundary = new ShapeDrawable(new RectShape());
-            bccBoundary.setBounds(width / 2 - 40, height / 6 - wallThickness, width / 2, height / 6 + wallThickness);
-            bccBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorMuted));
-            walls.add(bccBoundary);
-
-            // Walls C-C
-            ShapeDrawable ccBoundary = new ShapeDrawable(new RectShape());
-            ccBoundary.setBounds(width / 2 - wallThickness, height / 6 + 5, width / 2 + wallThickness, height / 6 * 2 - 70);
-            ccBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorMuted));
-            walls.add(ccBoundary);
-            ShapeDrawable cccBoundary = new ShapeDrawable(new RectShape());
-            cccBoundary.setBounds(width / 2 - wallThickness, height / 6 * 2 - 10, width / 2 + wallThickness, height / 6 * 2);
-            cccBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorMuted));
-            walls.add(cccBoundary);
-            ShapeDrawable ccoBoundary = new ShapeDrawable(new RectShape());
-            ccoBoundary.setBounds(width / 2 + 95, height / 6, width - wallThickness, height / 6 * 3 + 50);
-            ccoBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorMuted));
-            walls.add(ccoBoundary);
-            ShapeDrawable ccooBoundary = new ShapeDrawable(new RectShape());
-            ccooBoundary.setBounds(width / 2 + 175, height / 6+75, width - wallThickness, height / 6 + 150);
-            ccooBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorMuted));
-            walls.add(ccooBoundary);
-
-            // Walls C-D
-            ShapeDrawable cdBoundary = new ShapeDrawable(new RectShape());
-            cdBoundary.setBounds(0, height / 6 * 2 - wallThickness, width / 2, height / 6 * 2 + wallThickness);
-            cdBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorMuted));
-            walls.add(cdBoundary);
-
-            // Walls D-E
-            ShapeDrawable deBoundary = new ShapeDrawable(new RectShape());
-            deBoundary.setBounds(0, height / 6 * 3 - wallThickness, width / 2 - 25, height / 6 * 3 + wallThickness);
-            deBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorMuted));
-            walls.add(deBoundary);
-
-            // Walls EF-OUT
-            ShapeDrawable eobBoundary = new ShapeDrawable(new RectShape());
-            eobBoundary.setBounds(0, height / 6 * 3 - wallThickness, 80, height / 6 * 5 + wallThickness);
-            eobBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorMuted));
-            walls.add(eobBoundary);
-            ShapeDrawable eotBoundary = new ShapeDrawable(new RectShape());
-            eotBoundary.setBounds(width - 50, height / 6 * 3 + 20, width - wallThickness, height / 6 * 5 + wallThickness);
-            eotBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorMuted));
-            walls.add(eotBoundary);
-
-            // Dinner Table
-            ShapeDrawable tableBoundary = new ShapeDrawable(new RectShape());
-            tableBoundary.setBounds(width/2-95, height / 6 * 4 - 65, width/2-45, height / 6 * 4 + 65);
-            tableBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorLight));
-            walls.add(tableBoundary);
-
-            // Kitchen Island
-            ShapeDrawable kitchenBoundary = new ShapeDrawable(new RectShape());
-            kitchenBoundary.setBounds(width/2+50, height / 6 * 4 - 75, width/2+100, height / 6 * 4 + 75);
-            kitchenBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorLight));
-            walls.add(kitchenBoundary);
-
-            // Bed
-            ShapeDrawable bedBoundary = new ShapeDrawable(new RectShape());
-            bedBoundary.setBounds(2*wallThickness, height / 6 * 2 - 165, width/2-90, height / 6 * 2 - 45);
-            bedBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorLight));
-            walls.add(bedBoundary);
-
-            // Closet
-            ShapeDrawable closetBoundary = new ShapeDrawable(new RectShape());
-            closetBoundary.setBounds(width/2-40, 60, width/2-wallThickness, height / 6 - wallThickness);
-            closetBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorLight));
-            walls.add(closetBoundary);
-
-            // Shower Wall
-            ShapeDrawable showerWallBoundary = new ShapeDrawable(new RectShape());
-            showerWallBoundary.setBounds(width/2+50, 100-wallThickness, width/2+125, 100+wallThickness);
-            showerWallBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorMuted));
-            walls.add(showerWallBoundary);
-            ShapeDrawable showerWall2Boundary = new ShapeDrawable(new RectShape());
-            showerWall2Boundary.setBounds(width/2+125-wallThickness, 0, width/2+125+wallThickness, 100+wallThickness);
-            showerWall2Boundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorMuted));
-            walls.add(showerWall2Boundary);
-
-            // Desks
-            ShapeDrawable desk1Boundary = new ShapeDrawable(new RectShape());
-            desk1Boundary.setBounds(2*wallThickness, height/6*3-45, 90, height / 6*3 - wallThickness);
-            desk1Boundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorLight));
-            walls.add(desk1Boundary);
-            ShapeDrawable desk2Boundary = new ShapeDrawable(new RectShape());
-            desk2Boundary.setBounds(2*wallThickness, height/6*2+wallThickness, 90, height / 6*2 +45);
-            desk2Boundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorLight));
-            walls.add(desk2Boundary);
-
-            // Bookcases
-            ShapeDrawable booksBoundary = new ShapeDrawable(new RectShape());
-            booksBoundary.setBounds(100, height/6*2 + wallThickness, width / 2, height / 6*2 +25);
-            booksBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorLight));
-            walls.add(booksBoundary);
-
-            // Piano
-            ShapeDrawable pianoBoundary = new ShapeDrawable(new RectShape());
-            pianoBoundary.setBounds(100, height/6*3-25, width / 2 - 25, height / 6*3 - wallThickness);
-            pianoBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorLight));
-            walls.add(pianoBoundary);
-
-            // Couch
-            ShapeDrawable couchBoundary = new ShapeDrawable(new RectShape());
-            couchBoundary.setBounds(width/2+45, height/6*5+20, width/2+85, height / 6 * 5 +140);
-            couchBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorLight));
-            walls.add(couchBoundary);
-
-            // Sofa Chair
-            ShapeDrawable sofaBoundary = new ShapeDrawable(new RectShape());
-            sofaBoundary.setBounds(width/2-90, height/6*5-65, width/2-30, height / 6 * 5);
-            sofaBoundary.getPaint().setColor(ContextCompat.getColor(this, R.color.colorLight));
-            walls.add(sofaBoundary);
-        }
-
-        return walls;
-    }
 }
