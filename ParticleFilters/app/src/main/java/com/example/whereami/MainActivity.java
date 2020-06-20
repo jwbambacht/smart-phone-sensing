@@ -64,7 +64,6 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
     // Variables for orientation and filtering
     private boolean startFiltering = false;
     private int anchor = 0;
-    private long cornerDelay = 0;
     private boolean initialize = false;
 
     // Sensors and sensor variables

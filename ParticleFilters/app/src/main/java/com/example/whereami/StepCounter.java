@@ -43,8 +43,8 @@ public class StepCounter {
         double threshold = listener.getSensitivity();
         double stepTime = listener.getStepTime();
 
-        // Average acceleration difference must be bigger than the defined threshold and the previous average acceleration difference must be smaller than the threshold.
-        // This means that the phone accelerated in upward direction (increasing acceleration). The time to the previous step also should be at least some predefined value.
+        // Acceleration difference must be bigger than the defined threshold and the previous acceleration difference must be smaller than the threshold.
+        // This means that the phone accelerated in upward direction (increasing acceleration). The time to the previous step also should be at least some calibrated value.
         // If all these conditions satisfy a step is counted and the particles will move in the current direction.
         if(accelerationDifference > threshold && previousAccelerationDifference <= threshold && (timestamp-previousTimestamp) >= stepTime) {
             int direction = listener.getDirection();

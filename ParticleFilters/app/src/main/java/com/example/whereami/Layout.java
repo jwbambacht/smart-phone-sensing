@@ -91,6 +91,7 @@ public class Layout {
     }
 
     public void fillLayout() {
+        // Create cell separators
         this.addSeparator(0,height/6-1,width,height/6+1);
         this.addSeparator(0,height/6*2-1,width,height/6*2+1);
         this.addSeparator(0,height/6*3-1,width,height/6*3+1);
@@ -98,6 +99,7 @@ public class Layout {
         this.addSeparator(0,height/6*5-1,width,height/6*5+1);
         this.addSeparator(width/2-1,height/6*5,width/2+1,height/6*6);
 
+        // Create boundaries and objects
         this.addBoundary(0,0,width,wallThickness*2, "wall");                                                                        // Top
         this.addBoundary(width - 2 * wallThickness, 0, width, height, "wall");                                                             // Right
         this.addBoundary(0, height - 2 * wallThickness, width, height, "wall");                                                            // Bottom
@@ -115,6 +117,7 @@ public class Layout {
         this.addBoundary(0, height / 6 * 3 - wallThickness, width / 2 - 25, height / 6 * 3 + wallThickness, "wall");          // D-E
         this.addBoundary(0, height / 6 * 3 - wallThickness, 80, height / 6 * 5 + wallThickness, "wall");                      // EF-OUT
         this.addBoundary(width - 50, height / 6 * 3 + 20, width - wallThickness, height / 6 * 5 + wallThickness, "wall");     // EF-OUT
+
         this.addBoundary(width/2-95, height / 6 * 4 - 65, width/2-45, height / 6 * 4 + 65, "object");                           // Dinner Table
         this.addBoundary(width/2+50, height / 6 * 4 - 75, width/2+100, height / 6 * 4 + 75, "object");                          // Kitchen Island
         this.addBoundary(2*wallThickness, height / 6 + 50, width/2-90, height / 6 * 2 - 50, "object");                          // Bed
