@@ -426,13 +426,14 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                     }
 
                     canvas.drawColor(ContextCompat.getColor(MainActivity.this, R.color.colorDark));
+
                     for (Particle particle : particles) {
                         particle.getShape().draw(canvas);
                     }
 
-                    for (ShapeDrawable boundary : layout.getBoundaries()) {
-                        boundary.draw(canvas);
-                    }
+                    canvas = layout.drawSeparators();
+                    canvas = layout.drawBoundaries();
+                    canvas = layout.drawCellNames();
 
                     moveHandler.sendMessage(new Message());
                 }
@@ -478,13 +479,13 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         canvas.drawColor(ContextCompat.getColor(this, R.color.colorDark));
         canvasView.setImageBitmap(blankBitmap);
 
-        layout = new Layout(this.width,this.height, this.wallThickness, this);
+        layout = new Layout(this.width,this.height, this.wallThickness, this.canvas, this);
 
         particles = createParticles();
 
-        for (ShapeDrawable boundary : layout.getBoundaries()) {
-            boundary.draw(canvas);
-        }
+        canvas = layout.drawSeparators();
+        canvas = layout.drawBoundaries();
+        canvas = layout.drawCellNames();
 
         for(Particle particle : particles) {
             ShapeDrawable particleShape = particle.getShape();
