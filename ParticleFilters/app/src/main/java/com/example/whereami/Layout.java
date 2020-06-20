@@ -2,15 +2,10 @@ package com.example.whereami;
 
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.RectShape;
 import android.text.TextPaint;
-
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
-
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 

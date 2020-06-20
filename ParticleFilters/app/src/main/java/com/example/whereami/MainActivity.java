@@ -5,17 +5,14 @@ import androidx.core.content.ContextCompat;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.graphics.Paint;
 import android.os.Handler;
 import android.os.Message;
-import android.util.Log;
 import android.view.View.OnClickListener;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.drawable.ShapeDrawable;
-import android.graphics.drawable.shapes.RectShape;
 import android.os.Bundle;
 import android.content.Intent;
 import android.view.Display;
