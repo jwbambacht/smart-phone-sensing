@@ -182,18 +182,9 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         public void onAccuracyChanged(Sensor sensor, int accuracy) {}
 
         public void onSensorChanged(SensorEvent event) {
-
-            // If a step is bigger than 60 degrees we do not count a step and set a delay on the timestamp such that the corner step is not taken. Otherwise there may be a result of over-walking, especially when making a 180 degree turn
             if(startFiltering) {
                 long timeStamp = TimeUnit.SECONDS.convert(event.timestamp, TimeUnit.NANOSECONDS);
-
-                if(Math.min((int)(((orientationQueue.getLast()-orientationQueue.sum(orientationQueue)/orientationQueue.size())%360)+360)%360,(int) (((orientationQueue.sum(orientationQueue)/orientationQueue.size()-orientationQueue.getLast())%360)+360)%360) > 60) {
-                    cornerDelay = timeStamp+1;
-                }else{
-                    if(timeStamp >= cornerDelay) {
-                        stepCounter.count(timeStamp, event.values);
-                    }
-                }
+                stepCounter.count(timeStamp, event.values);
             }
         }
     };
@@ -336,7 +327,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                     bundle.putFloatArray("weights",weightRes);
                     message.setData(bundle);
                     currentCellHandler.sendMessage(message);
-                    Thread.sleep(1000);
+                    Thread.sleep(500);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -392,80 +383,12 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         settingsSharedPreferences = getApplicationContext().getSharedPreferences("SETTINGS", 0);
 
         layoutType = settingsSharedPreferences.getString("layout", "Joost");
-        sensitivity = Float.parseFloat(settingsSharedPreferences.getString("sensitivity", "1.0"));
-        stepSizeMultiplier = Integer.parseInt(settingsSharedPreferences.getString("stepsize", "5"));
+        sensitivity = Float.parseFloat(settingsSharedPreferences.getString("sensitivity", "1.2"));
+        stepSizeMultiplier = Integer.parseInt(settingsSharedPreferences.getString("stepsize", "6"));
         stepTime = Double.parseDouble(settingsSharedPreferences.getString("steptime","0.3"));
-        nParticles = Integer.parseInt(settingsSharedPreferences.getString("particles", "5000"));
+        nParticles = Integer.parseInt(settingsSharedPreferences.getString("particles", "4000"));
 
         this.getDisplaySize();
-    }
-
-    // Method that makes the particles move over the layout, based on the direction and stepsize
-    // StepSizeMultiplier is used to optimize the number of steps to the actual walked distance. Requires manual optimization
-    public void moveParticles(int direction, boolean step) {
-
-        if(step) {
-            numSteps++;
-            textview_steps.setText("Steps:\n"+numSteps);
-        }
-
-        executorService.execute(new Runnable() {
-            @Override
-            public void run() {
-                for (int i = 0; i < stepSizeMultiplier; i++) {
-                    for (Particle particle : particles) {
-                        particle.move(direction, stepSize);
-
-                        if (isCollision(particle.getShape())) {
-                            particle.setCollided(true);
-                            resampleParticle(particle,false);
-                        }
-                    }
-
-                    canvas.drawColor(ContextCompat.getColor(MainActivity.this, R.color.colorDark));
-
-                    for (Particle particle : particles) {
-                        particle.getShape().draw(canvas);
-                    }
-
-                    canvas = layout.drawSeparators();
-                    canvas = layout.drawBoundaries();
-                    canvas = layout.drawCellNames();
-
-                    moveHandler.sendMessage(new Message());
-                }
-            }
-        });
-    }
-
-    // Handler that returns the weights to the textviews
-    private Handler moveHandler = new Handler() {
-        @Override
-        public void handleMessage(Message message) {
-            canvasView.invalidate();
-        }
-    };
-
-
-
-    // Method that resample a collided particle. It randomly chooses another particle and takes its current location.
-    // Resamples based on more random numbers. If collided with a wall, the process repeats until not collided.
-    public void resampleParticle(Particle particle, boolean init) {
-        while(particle.getCollided()) {
-            // Get the x and y coordinates of an uncollided random particle to resample a collided particle to
-            int randomParticleID = (int) (Math.random() * particles.size());
-            int selectedParticleX = particles.get(randomParticleID).getX();
-            int selectedParticleY = particles.get(randomParticleID).getY();
-
-            particle.resample(selectedParticleX, selectedParticleY);
-
-            if (!isCollision(particle.getShape())) {
-                particle.setCollided(false);
-                if(!init) {
-                    particle.lowerWeight();
-                }
-            }
-        }
     }
 
     // Method that prepares the canvas with particles and layout
@@ -514,8 +437,79 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         return particles;
     }
 
+    // Method that makes the particles move over the layout, based on the direction and stepsize
+    // StepSizeMultiplier is used to optimize the number of steps to the actual walked distance. Requires manual optimization
+    public void moveParticles(int direction, boolean isStep) {
+
+        if(isStep) {
+            numSteps++;
+            textview_steps.setText("Steps:\n"+numSteps);
+        }
+
+        executorService.execute(new Runnable() {
+            @Override
+            public void run() {
+                for (int i = 0; i < stepSizeMultiplier; i++) {
+                    // Each particles is moved by the defined distance and direction and is checked for collision. If so, it is resampled.
+                    for (Particle particle : particles) {
+                        particle.move(direction, stepSize);
+
+                        if (isCollision(particle.getShape())) {
+                            particle.setCollided(true);
+                            resampleParticle(particle,false);
+                        }
+                    }
+
+                    // Fill the current canvas with a solid color to clear it
+                    canvas.drawColor(ContextCompat.getColor(MainActivity.this, R.color.colorDark));
+
+                    // Draw the new particles new locations on the canvas
+                    for (Particle particle : particles) {
+                        particle.getShape().draw(canvas);
+                    }
+
+                    // Draw the cell separators, boundaries and cell names on the canvas
+                    canvas = layout.drawSeparators();
+                    canvas = layout.drawBoundaries();
+                    canvas = layout.drawCellNames();
+
+                    moveHandler.sendMessage(new Message());
+                }
+            }
+        });
+    }
+
+    // Handler that makes the redrawn canvas visibile
+    private Handler moveHandler = new Handler() {
+        @Override
+        public void handleMessage(Message message) {
+            canvasView.invalidate();
+        }
+    };
+
+    // Method that resample a collided particle. It randomly chooses another particle and takes its current location.
+    // Resamples based on more random numbers. If collided with a wall, the process repeats until not collided.
+    public void resampleParticle(Particle particle, boolean init) {
+        while(particle.getCollided()) {
+            // Get the x and y coordinates of an uncollided random particle to resample a collided particle to
+            int randomParticleID = (int) (Math.random() * particles.size());
+            int selectedParticleX = particles.get(randomParticleID).getX();
+            int selectedParticleY = particles.get(randomParticleID).getY();
+
+            particle.resample(selectedParticleX, selectedParticleY);
+
+            // If is does not collide with a boundary or object the weight is lowered of the resampled particle
+            if (!isCollision(particle.getShape())) {
+                particle.setCollided(false);
+                if(!init) {
+                    particle.lowerWeight();
+                }
+            }
+        }
+    }
+
     // Method that determines if the particle collides with a wall or furniture
-    private boolean isCollision(ShapeDrawable particle) {
+    public boolean isCollision(ShapeDrawable particle) {
         for(ShapeDrawable boundary : layout.getBoundaries()) {
             if(isCollision(boundary,particle))
                 return true;
@@ -524,7 +518,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
     }
 
     // Helper method that detects collision between two shapes
-    private boolean isCollision(ShapeDrawable boundary, ShapeDrawable particle) {
+    public boolean isCollision(ShapeDrawable boundary, ShapeDrawable particle) {
         Rect boundaryShape = new Rect(boundary.getBounds());
         return boundaryShape.intersect(particle.getBounds());
     }
@@ -545,7 +539,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
     @Override
     public int getDirection() {
 
-        int correction = (int) this.azimuth-anchor;
+        int correction = (int) this.azimuth-this.anchor;
         int direction = 0;
 
         if(correction < 0) {
