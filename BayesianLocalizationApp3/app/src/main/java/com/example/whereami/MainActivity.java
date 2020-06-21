@@ -3,6 +3,9 @@ package com.example.whereami;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+
+import android.os.Handler;
+import android.os.Message;
 import android.view.View.OnClickListener;
 
 import android.Manifest;
@@ -17,7 +20,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.content.Intent;
 import android.os.CountDownTimer;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -28,7 +30,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -79,14 +80,33 @@ public class MainActivity extends AppCompatActivity implements OnClickListener {
         senseLabel = (TextView) findViewById(R.id.textview_label_sense);
         leftGridLayout = (GridLayout) findViewById(R.id.gridlayout_left_cells);
         cells = this.getResources().getStringArray(R.array.cell_array);
-
-        resetSensing();
-
         buttonSense = (Button) findViewById(R.id.button_sense);
         buttonTraining = (Button) findViewById(R.id.button_training);
         buttonSense.setOnClickListener(this);
         buttonTraining.setOnClickListener(this);
+
+        resetSensing();
+
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Thread.sleep(1000);
+                    enableButtonHandler.sendMessage(new Message());
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        thread.start();
     }
+
+    private Handler enableButtonHandler = new Handler() {
+        @Override
+        public void handleMessage(Message message) {
+            buttonSense.setEnabled(true);
+        }
+    };
 
     @Override
     public void onClick(View v) {
@@ -99,19 +119,25 @@ public class MainActivity extends AppCompatActivity implements OnClickListener {
                 if (ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                     ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, 1);
                 }else{
-                    sense();
+                    try {
+                        sense();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
                 break;
             }
         }
     }
 
-    public void sense() {
+    public void sense() throws InterruptedException {
         if(sensingFinished) {
             restartActivity(MainActivity.this);
         }else {
 
+            wifiManager.setWifiEnabled(true);
             wifiManager.startScan();
+
             List<ScanResult> scanResults = wifiManager.getScanResults();
 
             // Include scanned APs only if the BSSID is also in the list of processed networks
@@ -129,27 +155,18 @@ public class MainActivity extends AppCompatActivity implements OnClickListener {
             Collections.sort(accessPoints);
 
             for(AccessPoint ap : accessPoints) {
-                // Requirement that there should be at least 30 samples of the corresponding AP
-                if(Database.getSampleCount(db,ap.getBSSID()) < 30) {
-                    continue;
-                }
-
-                Log.i("AP",ap.toString());
-                Log.i("BEFORE",Arrays.toString(bayes.getPrior()));
                 double[] probabilities = Util.getProbabilities(db,ap.getBSSID(),ap.getRSSI());
-                Log.i("PROBS",Arrays.toString(probabilities));
                 bayes.calculatePosterior(probabilities);
-                Log.i("AFTER",Arrays.toString(bayes.getPosterior()));
             }
 
             scanResults.clear();
 
             // When user chooses to sense networks the posterior is used to see if a cell has a high localization probability
             if (bayes.isConverged()) {
-                System.out.println("CONVERGED: "+Arrays.toString(bayes.getPosterior()));
                 senseLabel.setText(getResources().getString(R.string.textview_sense_results));
                 buttonSense.setText(getResources().getString(R.string.button_sense_reset));
                 sensingFinished = true;
+                wifiManager.setWifiEnabled(false);
             } else {
                 senseLabel.setText(getResources().getString(R.string.textview_sense_again));
             }
@@ -160,8 +177,9 @@ public class MainActivity extends AppCompatActivity implements OnClickListener {
         }
     }
 
-    public static void restartActivity(Activity act) {
+    public void restartActivity(Activity act) throws InterruptedException {
         act.recreate();
+        buttonSense.setEnabled(false);
     }
 
     void resetSensing() {
@@ -173,7 +191,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener {
     CountDownTimer countDownTimer = new CountDownTimer(10000, 1000) {
         public void onTick(long millis) {
             buttonSense.setEnabled(false);
-            buttonSense.setText("SENSE IN " + millis / 1000);
+            buttonSense.setText("WAIT " + millis / 1000 + " .....");
         }
 
         public void onFinish() {
@@ -181,7 +199,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener {
             if (sensingFinished) {
                 buttonSense.setText("RESET SENSE RESULTS");
             } else {
-                buttonSense.setText("SENSE");
+                buttonSense.setText("SENSE AGAIN");
             }
         }
     };
