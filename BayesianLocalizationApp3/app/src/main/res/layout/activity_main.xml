@@ -76,7 +76,8 @@
             android:layout_marginRight="10dp"
             android:fontFamily="sans-serif-thin"
             android:text="@string/button_sense_title"
-            android:textSize="24sp" />
+            android:textSize="24sp"
+            android:enabled="false" />
 
         <Button
             android:id="@+id/button_training"
