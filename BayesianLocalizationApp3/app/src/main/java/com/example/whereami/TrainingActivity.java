@@ -1,5 +1,7 @@
 package com.example.whereami;
 
+import android.os.Handler;
+import android.os.Message;
 import android.view.View.OnClickListener;
 import android.Manifest;
 import android.content.Context;
@@ -106,6 +108,10 @@ public class TrainingActivity extends AppCompatActivity implements OnClickListen
                             Log.i("Scan ",""+scanned);
                             Util.train(wifiManager,db,cellID, scanID);
                             scanned++;
+
+                            Message message = new Message();
+                            updateTableHandler.sendMessage(message);
+
                         }
                         toast.show();
                     } catch (InterruptedException e) {
@@ -116,6 +122,14 @@ public class TrainingActivity extends AppCompatActivity implements OnClickListen
             thread.start();
         }
     }
+
+    // Handler that updates the table with training data gathered
+    private Handler updateTableHandler = new Handler() {
+        @Override
+        public void handleMessage(Message message) {
+            loadTableData();
+        }
+    };
 
     // Method that loads the data of the table, removes current data and inserts new data
     public void loadTableData() {

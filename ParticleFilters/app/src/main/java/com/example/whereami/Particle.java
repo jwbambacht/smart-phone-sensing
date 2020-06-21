@@ -14,7 +14,7 @@ public class Particle {
     float weight;
     int width, height, wallThickness;
 
-    public Particle(int x, int y, int nParticles, int width, int height, int wallThickness) {
+    public Particle(int x, int y, int width, int height, int wallThickness) {
         this.x = x;
         this.y = y;
         this.pointRadius = 2;
@@ -49,8 +49,26 @@ public class Particle {
 
     public float getWeight() { return this.weight; }
 
-    public void lowerWeight() { this.weight = this.weight/2; }
+    // Method that lowers the weight of the particle and updates the color of the particle based on that
+    public void lowerWeight() {
+        this.weight = this.weight/2;
 
+        if(this.weight > 0.5) {
+            this.shape.getPaint().setColor(0xff0000);
+        }else if(this.weight > 0.25) {
+            this.shape.getPaint().setColor(0xff4d00);
+        }else if(this.weight > 0.125) {
+            this.shape.getPaint().setColor(0xff7400);
+        }else if(this.weight > 0.06125) {
+            this.shape.getPaint().setColor(0xff9a00);
+        }else if(this.weight > 0.03125) {
+            this.shape.getPaint().setColor(0xffc100);
+        }else {
+            this.shape.getPaint().setColor(Color.GREEN);
+        }
+    }
+
+    // Method that replaces the particle on the map if it within boundaries. No check here for collision with walls, that is done after resampling.
     public void resample(int x, int y) {
         boolean finished = false;
 
@@ -70,6 +88,7 @@ public class Particle {
         this.shape.setBounds(this.x-this.pointRadius, this.y-this.pointRadius, this.x+this.pointRadius, this.y+this.pointRadius);
     }
 
+    // Method that returns the current cell of the particle
     public int getCurrentCell() {
         int cellID = 0;
 
@@ -97,7 +116,8 @@ public class Particle {
         return cellID;
     }
 
-    public void updateLocation(int direction, int stepSize) {
+    // Method that updates the location of the particle given the direction and stepsize
+    public void move(int direction, int stepSize) {
 
         Rect r = this.shape.getBounds();
 

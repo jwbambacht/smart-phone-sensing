@@ -20,6 +20,11 @@ public class Bayes {
 
         for(int j = 0; j < 8; j++) {
             double prob = this.prior[j]*probabilities[j];
+
+            // To keep cell probabilities 'alive' we give every cell a minimum value
+            if(prob < 1e-50 || Double.isNaN(prob)) {
+                prob = 1e-50;
+            }
             this.posterior[j] = prob;
             norm_sum += prob;
         }
